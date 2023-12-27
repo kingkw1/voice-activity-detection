@@ -16,7 +16,7 @@ from core.models import Net, NickNet, DenseNet
 from core.visualization import Vis
 
 
-OBJ_TRAIN_MODELS = True
+OBJ_TRAIN_MODELS = False
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
 
@@ -369,10 +369,14 @@ def test_predict(net, data, size_limit, noise_level):
         X = Variable(torch.from_numpy(np.array(X)).float())
         y = Variable(torch.from_numpy(np.array(y))).long()
 
-        if OBJ_CUDA:
-            X = X.cuda()
-
-        out = net(X)
+        try:
+            out = net(X)
+        except RuntimeError:
+            out = net(X.cuda())
+        # if OBJ_CUDA:
+        #     X = X.cuda()
+        #
+        # out = net(X)
 
         if OBJ_CUDA:
             out = out.cpu()
@@ -516,10 +520,15 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
     accum_out = [0] * offset
     for batch in batches:
         X = Variable(torch.from_numpy(batch).float())
-        if OBJ_CUDA:
+        try:
             out = torch.max(net(X.cuda()), 1)[1].cpu().float().data.numpy()
-        else:
+        except RuntimeError:
             out = torch.max(net(X), 1)[1].float().data.numpy()
+
+        # if OBJ_CUDA:
+        #     out = torch.max(net(X.cuda()), 1)[1].cpu().float().data.numpy()
+        # else:
+        #     out = torch.max(net(X), 1)[1].float().data.numpy()
         accum_out.extend(out)
 
     # Stop timer
