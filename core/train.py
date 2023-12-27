@@ -16,9 +16,9 @@ from core.models import Net, NickNet, DenseNet
 from core.visualization import Vis
 
 
-OBJ_TRAIN_MODELS = False
+OBJ_TRAIN_MODELS = True
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
-
+STEP_SIZE = 6
 
 def test_network(data):
 
@@ -110,9 +110,6 @@ def load_net(epoch=14, title='net'):
         return torch.load(net_path(epoch, title), map_location='cpu')
 
 
-STEP_SIZE = 6
-
-
 def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, use_adam=True,
               weight_decay=1e-5, momentum=0.9, use_focal_loss=True, gamma=0.0,
               early_stopping=False, patience=25, frame_count=FRAMES, step_size=STEP_SIZE,
@@ -173,7 +170,7 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
         print(f'Criterion: {_critstr}\nOptimizer: {_optmstr}')
         print(f'Max epochs: {_earlstr}\nAuto-save: {_autostr}')
 
-    train()
+    net.train()
     stalecount, maxacc = 0, 0
 
     def plot(losses, accs, val_losses, val_accs):
@@ -307,7 +304,7 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
             # return
             val_losses.append(val_loss)
             val_accs.append(val_acc)
-            train()
+            net.train()
 
             # Early stopping algorithm.
             # If validation accuracy does not improve for
@@ -324,7 +321,7 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
         if auto_save:
             save_net(net, epoch, title)
 
-        # Optionally plot performance metrics continously
+        # Optionally plot performance metrics continuously
         if verbose:
 
             # Print measured wall-time of first epoch
@@ -552,7 +549,7 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
     Vis.plot_sample(raw_frames, accum_out, title='Sample (Neural Net)', show_distribution=False)
 
 
-def train(data):
+def train_models(data):
     if OBJ_TRAIN_MODELS:
 
         # LSTM, small, γ = 0
@@ -590,7 +587,7 @@ def train(data):
         net_large = load_net(title='net_large')
         gru = load_net(title='gru')
         gru_large = load_net(title='gru_large')
-        densenet = load_net(title='densenet', epoch=12)
+        densenet = load_net(title='densenet')
         densenet_large = load_net(title='densenet_large')
 
     # ROC Curve
