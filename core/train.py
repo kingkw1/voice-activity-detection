@@ -10,11 +10,14 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 import numpy as np
 
-from core.common import num_params, STEP_SIZE, accuracy, BATCH_SIZE, FRAMES, FEATURES, OBJ_CUDA, NOISE_LEVELS, \
-    OBJ_TRAIN_MODELS
+from core.common import num_params, accuracy, BATCH_SIZE, FRAMES, FEATURES, OBJ_CUDA, NOISE_LEVELS_DB
 from core.generator import DataGenerator
 from core.models import Net, NickNet, DenseNet
 from core.visualization import Vis
+
+
+OBJ_TRAIN_MODELS = False
+NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 
 
 def test_network(data):
@@ -105,6 +108,9 @@ def load_net(epoch=14, title='net'):
         return torch.load(net_path(epoch, title))
     else:
         return torch.load(net_path(epoch, title), map_location='cpu')
+
+
+STEP_SIZE = 6
 
 
 def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, use_adam=True,
@@ -658,3 +664,4 @@ def train(data):
 
     print('\ndensenet_large:')
     netvad(densenet_large, data, only_plot_net=True)
+

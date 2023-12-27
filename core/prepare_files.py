@@ -4,9 +4,16 @@ import numpy as np
 import webrtcvad
 from pydub import AudioSegment
 
-from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, FRAME_SIZE
+from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, NOISE_FOLDER, SPEECH_FOLDER
+
 
 OBJ_PREPARE_AUDIO = True
+
+# Frame size to use for the labelling.
+FRAME_SIZE_MS = 30
+
+# Calculate frame size in data points.
+FRAME_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
 
 
 class FileManager:
@@ -189,14 +196,15 @@ class FileManager:
 
 def prepare_files():
 
-    speech_dataset = FileManager('speech', '/home/kevin/Documents/voice-activity-detection/data/data/LibriSpeech')
+    speech_dataset = FileManager('speech', SPEECH_FOLDER)
     speech_dataset.prepare_files()
     speech_dataset.collect_frames()
     speech_dataset.label_frames()
     print('Speech dataset labeled')
 
-    noise_dataset = FileManager('noise', '/home/kevin/Documents/voice-activity-detection/data/data/QUT-NOISE')
+    noise_dataset = FileManager('noise', NOISE_FOLDER)
     noise_dataset.prepare_files(normalize=True)
     noise_dataset.collect_frames()
 
     return speech_dataset, noise_dataset
+
