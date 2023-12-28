@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 from core.common import num_params
 from core.generator import test_generator, webrtc_vad_accuracy
 from core.prepare_files import prepare_files
@@ -45,6 +46,8 @@ def main():
     print('Accuracy (sensitivity 2, no noise):', webrtc_vad_accuracy(data, 2, 'None'))
     print('Accuracy (sensitivity 2, -15 dB noise level):', webrtc_vad_accuracy(data, 2, '-15'))
     print('Accuracy (sensitivity 2, -3 dB noise level):', webrtc_vad_accuracy(data, 2, '-3'))
+
+    plt.show()
 
 if __name__ == '__main__':
     main()

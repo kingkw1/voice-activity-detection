@@ -418,7 +418,6 @@ def roc_auc(nets, data, noise_lvl, size_limit=0):
     plt.xlabel('False Positive Rate', fontsize=16)
     plt.plot([0, 1], [0, 1], 'r--')
     plt.legend(loc='lower right', prop={'size': 16})
-    plt.show()
 
 
 def far(net, data, size_limit=0, frr=1, plot=True):
