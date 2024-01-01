@@ -1,13 +1,16 @@
 
+"""
+For evaluation with STRONG data, we will build a labeled test dataset.
+This will involve using a file that has the mic'ed audio correctly separated from the replay audio.
+This will be used with our simpler voice detection algorithm to generate labels.
+We will then create the test audio by adding the mic audio to the game replay audio.
+"""
+
 # List the STRONG data files with separated mic and replay audio
 # Teams 40-62 (skip 53)
-teams = range(40, 62)
+teams = list(range(40, 63))
+teams.remove(53)
 
-"""
-For evaluation with STRONG data, we will build a labeled test dataset. This will involve using a file that has the
-mic'ed audio correctly separated from the replay audio. This will be used with our simpler voice detection algorithm to
-generate labels. We will then create the test audio by adding the mic audio to the game replay audio.
-"""
 # initialize the output folder
 
 for team in teams:
