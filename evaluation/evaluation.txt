@@ -1,0 +1,3 @@
+For evaluation with STRONG data, we will build a labeled test dataset. This will involve using a file that has the
+mic'ed audio correctly separated from the replay audio. This will be used with our simpler voice detection algorithm to
+generate labels. We will then create the test audio by adding the mic audio to the game replay audio.

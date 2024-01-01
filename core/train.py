@@ -16,9 +16,10 @@ from core.models import Net, NickNet, DenseNet
 from core.visualization import Vis
 
 
-OBJ_TRAIN_MODELS = False
+OBJ_TRAIN_MODELS = True
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
+
 
 def test_network(data):
 
