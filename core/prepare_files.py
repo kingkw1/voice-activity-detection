@@ -194,6 +194,7 @@ class FileManager:
         self.data.flush()
         print('\nDone!')
 
+
 def prepare_files():
 
     speech_dataset = FileManager('speech', SPEECH_FOLDER)

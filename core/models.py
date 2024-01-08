@@ -41,7 +41,7 @@ class Net(nn.Module):
 
     def forward(self, x):
         if OBJ_CUDA:
-           self.rnn.flatten_parameters()
+            self.rnn.flatten_parameters()
 
         # (batch, frames, features)
         if hasattr(self, 'lstm') and self.lstm:
@@ -379,7 +379,6 @@ class DenseNet(nn.Module):
             )
 
             self.out = nn.Linear(80, 2, bias=False)
-
 
         else:
 
