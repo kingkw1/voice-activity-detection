@@ -4,6 +4,8 @@ import torch
 DATA_FOLDER = "/home/kevin/Documents/voice-activity-detection/data"
 NOISE_FOLDER = '/home/kevin/Documents/voice-activity-detection/data/QUT-NOISE'
 SPEECH_FOLDER = '/home/kevin/Documents/voice-activity-detection/data/LibriSpeech'
+STRONG_PROCESSED_MIC_FOLDER = "/home/kevin/Documents/voice-activity-detection/data/my_audio_files/processedMicAudio"
+STRONG_VIDEO_AUDIO_FOLDER = "/home/kevin/Documents/voice-activity-detection/data/my_audio_files/videoAudio"
 
 # Specify the desired WAV-format.
 SAMPLE_RATE = 16000

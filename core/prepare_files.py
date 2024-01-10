@@ -1,11 +1,13 @@
 import glob
+from os import path
+
 import h5py
 import numpy as np
 import webrtcvad
 from pydub import AudioSegment
 
-from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, NOISE_FOLDER, SPEECH_FOLDER
-
+from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, NOISE_FOLDER, SPEECH_FOLDER, \
+    STRONG_PROCESSED_MIC_FOLDER, STRONG_VIDEO_AUDIO_FOLDER
 
 OBJ_PREPARE_AUDIO = True
 
@@ -17,11 +19,11 @@ FRAME_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
 
 
 class FileManager:
-    '''
+    """
     Keeps track of audio-files from a data-set.
     Provides support for formatting the wav-files into a desired format.
     Also provides support for conversion of .flac files (as we have in the LibriSpeech data-set).
-    '''
+    """
 
     def __init__(self, name, directory):
 
@@ -35,6 +37,7 @@ class FileManager:
             files = glob.glob(directory + '/**/*.wav', recursive=True)
             files.extend(glob.glob(directory + '/**/*.flac', recursive=True))
             files = [f for f in files]
+            files.sort()
 
             # Setup data set.
             dt = h5py.special_dtype(vlen=str)
@@ -48,13 +51,13 @@ class FileManager:
         return len(self.data['files'])
 
     def prepare_files(self, normalize=False):
-        '''
+        """
         Prepares the files for the project.
         Will do the following check for each file:
         1. Check if it has been converted already to the desired format.
         2. Converts all files to WAV with the desired properties.
         3. Stores the converted files in a separate folder.
-        '''
+        """
 
         if not OBJ_PREPARE_AUDIO:
             print(f'Skipping check for {self.name}.')
@@ -101,10 +104,10 @@ class FileManager:
         print('\nDone!')
 
     def collect_frames(self):
-        '''
+        """
         Takes all the audio files and merges their frames together into one long array
         for use with the sample generator.
-        '''
+        """
 
         if 'frames' in self.data:
             print('Frame merging already done. Skipping.')
@@ -159,10 +162,10 @@ class FileManager:
         self.data.flush()
         print('\nDone!')
 
-    def label_frames(self):
-        '''
+    def label_frames(self, batch_size=65536):
+        """
         Takes all audio frames and labels them using the WebRTC VAD.
-        '''
+        """
 
         if 'labels' in self.data:
             print('Frame labelling already done. Skipping.')
@@ -176,7 +179,6 @@ class FileManager:
 
         frame_count = len(self.data['frames'])
         progress = 0
-        batch_size = 65536
 
         # Create data set for labels.
         dt = np.dtype(np.uint8)
@@ -195,6 +197,56 @@ class FileManager:
         print('\nDone!')
 
 
+class STRONGFileManager(FileManager):
+    def __init__(self, name, directory):
+        super().__init__(name, directory)
+
+        self.name = name
+        self.data = h5py.File(DATA_FOLDER + '/' + name + '.hdf5', 'a')
+
+        # Setup file names.
+        if ('files' not in self.data) or (self.data['files'].shape[0] == 0):
+
+            # Get files.
+            files = glob.glob(directory + '/**/*.wav', recursive=True)
+            files.extend(glob.glob(directory + '/**/*.flac', recursive=True))
+            files = [f for f in files]
+
+            # Setup data set.
+            dt = h5py.special_dtype(vlen=str)
+            self.data.create_dataset('files', (len(files),), dtype=dt)
+
+            # Add file names.
+            for i, f in enumerate(files):
+                self.data['files'][i] = f
+
+
+def prepare_strong_files():
+    # Load up mic audio. Process and label
+    strong_processed_mic_dataset = FileManager('strong_processed_mic', STRONG_PROCESSED_MIC_FOLDER)
+    strong_processed_mic_dataset.prepare_files(normalize=True)
+    strong_processed_mic_dataset.collect_frames()
+    strong_processed_mic_dataset.label_frames()
+
+    # Load up video audio.
+    strong_video_audio_dataset = FileManager('strong_video_audio', STRONG_VIDEO_AUDIO_FOLDER)
+    strong_video_audio_dataset.prepare_files(normalize=True)
+    strong_video_audio_dataset.collect_frames()
+
+    # Copy the data from mic audio file to video audio file
+    # NOTE: this is a little risky -- Hoping that the processed mic data matches up to video data. to fix,
+    # would need to store a dictionary or lookup list in the h5py file
+
+    assert len(strong_video_audio_dataset.data['frames']) == len(strong_processed_mic_dataset.data['frames'])
+    if 'labels' not in strong_video_audio_dataset.data:
+        labels = strong_processed_mic_dataset.data['labels']
+        strong_video_audio_dataset.data.create_dataset('labels', data=labels)
+    else:
+        print('Strong labels already copied from mic audio to video audio. skipping')
+
+    print('STRONG Dataset Labeled')
+
+
 def prepare_files():
 
     speech_dataset = FileManager('speech', SPEECH_FOLDER)
@@ -209,3 +261,6 @@ def prepare_files():
 
     return speech_dataset, noise_dataset
 
+
+if __name__ == '__main__':
+    prepare_strong_files()
