@@ -38,7 +38,6 @@ class Vis:
         plt.title(title)
         plt.plot(time, raw)
         plt.plot(time_labels, labels - 0.5)
-        plt.show()
 
     @staticmethod
     def plot_sample(frames, labels, title='Sample', show_distribution=True):
@@ -53,6 +52,21 @@ class Vis:
             voice = (labels.tolist().count(1) * 100) / len(labels)
             silence = (labels.tolist().count(0) * 100) / len(labels)
             print('{0:.0f} % voice {1:.0f} % silence'.format(voice, silence))
+
+    @staticmethod
+    def plot_evaluation(frames, labels, predictions, title=None):
+        raw = Vis._norm_raw(frames.flatten())
+        time, time_labels = Vis._time_axis(raw, labels)
+
+        fig = plt.figure(1, figsize=(16, 3))
+        plt.title(title)
+        plt.plot(time, raw, 'k', label='video audio', alpha=0.5)
+        plt.plot(time_labels, labels - 0.5, 'k', label='labels', linewidth=2)
+        plt.plot(time_labels, predictions-0.5, 'r--', label='prediction', linewidth=2)
+        plt.xlabel('Time(s)')
+        plt.tight_layout()
+        plt.legend()
+        return fig
 
     @staticmethod
     def plot_sample_webrtc(frames, sensitivity=0):

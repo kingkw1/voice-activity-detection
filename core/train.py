@@ -16,7 +16,7 @@ from core.models import Net, NickNet, DenseNet
 from core.visualization import Vis
 
 
-OBJ_TRAIN_MODELS = True
+OBJ_TRAIN_MODELS = False
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
 
@@ -115,13 +115,13 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
               weight_decay=1e-5, momentum=0.9, use_focal_loss=True, gamma=0.0,
               early_stopping=False, patience=25, frame_count=FRAMES, step_size=STEP_SIZE,
               auto_save=True, title='net', verbose=True):
-    '''
+    """
     Full-featured training of a given neural network.
     A number of training parameters are optionally adjusted.
     If verbose is True, the training progress is continously
     plotted at the end of each epoch.
     If auto_save is True, the model will be saved every epoch.
-    '''
+    """
 
     # Set up an instance of data generator using default partitions
     generator = DataGenerator(data, size_limit)
@@ -175,11 +175,11 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
     stalecount, maxacc = 0, 0
 
     def plot(losses, accs, val_losses, val_accs):
-        '''
+        """
         Continously plots the training/validation loss and accuracy
         of the model being trained. This functions is only called if
         verbose is True for the training session.
-        '''
+        """
         e = [i for i in range(len(losses))]
         # fig = plt.figure(figsize=(12, 4))
 
@@ -342,9 +342,9 @@ def set_seed(seed = 1337):
 
 
 def test_predict(net, data, size_limit, noise_level):
-    '''
+    """
     Computes predictions on test data using given network.
-    '''
+    """
 
     # Set up an instance of data generator using default partitions
     generator = DataGenerator(data, size_limit)
@@ -393,9 +393,9 @@ def test_predict(net, data, size_limit, noise_level):
 
 
 def roc_auc(nets, data, noise_lvl, size_limit=0):
-    '''
+    """
     Generates a ROC curve for the given network and data for each noise level.
-    '''
+    """
     plt.figure(1, figsize=(16, 10))
     plt.title('Receiver Operating Characteristic (%s)' % noise_lvl, fontsize=16)
 
@@ -422,9 +422,9 @@ def roc_auc(nets, data, noise_lvl, size_limit=0):
 
 
 def far(net, data, size_limit=0, frr=1, plot=True):
-    '''
+    """
     Computes the confusion matrix for a given network.
-    '''
+    """
 
     # Evaluate predictions using threshold
     def apply_threshold(y_score, t=0.5):
@@ -466,11 +466,11 @@ def far(net, data, size_limit=0, frr=1, plot=True):
 
 
 def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=False, timeit=True):
-    '''
+    """
     Generates a sample of specified length and runs it through
     the given network. By default, the network output is plotted
     alongside the original labels and WebRTC output for comparison.
-    '''
+    """
 
     # Set up an instance of data generator using default partitions
     generator = DataGenerator(data)
@@ -525,10 +525,6 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
         except RuntimeError:
             out = torch.max(net(X), 1)[1].float().data.numpy()
 
-        # if OBJ_CUDA:
-        #     out = torch.max(net(X.cuda()), 1)[1].cpu().float().data.numpy()
-        # else:
-        #     out = torch.max(net(X), 1)[1].float().data.numpy()
         accum_out.extend(out)
 
     # Stop timer
@@ -552,10 +548,7 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
 
     # Plot results
     print('Displaying results for noise level:', noise_level)
-    if not only_plot_net:
-        Vis.plot_sample(raw_frames, labels, show_distribution=False)
-        Vis.plot_sample_webrtc(raw_frames, sensitivity=0)
-    Vis.plot_sample(raw_frames, accum_out, title='Sample (Neural Net)', show_distribution=False)
+    Vis.plot_evaluation(raw_frames, labels, accum_out)
 
 
 def train_models(data):
@@ -663,7 +656,7 @@ def train_models(data):
     netvad(gru, data, only_plot_net=True)
 
     print('\ngru_large:')
-    netvad(gru_large, data, only_plot_net=True)
+    netvad(gru_large, data, only_plot_net=False)
 
     print('\ndensenet:')
     netvad(densenet, data, only_plot_net=True)
