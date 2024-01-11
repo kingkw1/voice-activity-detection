@@ -72,11 +72,17 @@ class DataGenerator:
         self.data_mode = 2
 
     def get_data(self, index_from, index_to):
-        frames = self.data['frames-' + self.noise_level][index_from: index_to]
-        mfcc = self.data['mfcc-' + self.noise_level][index_from: index_to]
-        delta = self.data['delta-' + self.noise_level][index_from: index_to]
-        labels = self.data['labels'][index_from: index_to]
-        return frames, mfcc, delta, labels
+        try:
+            frames = self.data['frames-' + self.noise_level][index_from: index_to]
+            mfcc = self.data['mfcc-' + self.noise_level][index_from: index_to]
+            delta = self.data['delta-' + self.noise_level][index_from: index_to]
+            labels = self.data['labels'][index_from: index_to]
+
+            return frames, mfcc, delta, labels
+        except KeyError:
+            frames = self.data['frames'][index_from: index_to]
+            labels = self.data['labels'][index_from: index_to]
+            return frames, None, None, labels
 
     def get_batch(self, index):
 

@@ -396,7 +396,8 @@ def roc_auc(nets, data, noise_lvl, size_limit=0):
     """
     Generates a ROC curve for the given network and data for each noise level.
     """
-    plt.figure(1, figsize=(16, 10))
+
+    fig, ax = plt.subplots(1, 1, figsize=(16, 10))
     plt.title('Receiver Operating Characteristic (%s)' % noise_lvl, fontsize=16)
 
     # For each noise level
@@ -419,6 +420,8 @@ def roc_auc(nets, data, noise_lvl, size_limit=0):
     plt.xlabel('False Positive Rate', fontsize=16)
     plt.plot([0, 1], [0, 1], 'r--')
     plt.legend(loc='lower right', prop={'size': 16})
+
+    return fig
 
 
 def far(net, data, size_limit=0, frr=1, plot=True):
@@ -465,7 +468,7 @@ def far(net, data, size_limit=0, frr=1, plot=True):
         print('FAR: %0.2f%% for fixed FRR at %0.2f%% and noise level' % fix_frr(y_true, y_score, frr, lvl), lvl)
 
 
-def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=False, timeit=True):
+def netvad(net, data, noise_level='-3', init_pos=50, length=700, title=None, timeit=True):
     """
     Generates a sample of specified length and runs it through
     the given network. By default, the network output is plotted
@@ -490,19 +493,25 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
 
     raw_frames, mfcc, delta, labels = generator.get_data(init_pos, init_pos + length)
 
-    # Convert sample to list of frames
-    def get_frames():
-        i = 0
-        while i < length - FRAMES:
-            yield np.hstack((mfcc[i: i + FRAMES], delta[i: i + FRAMES]))
-            i += 1
+    if mfcc is not None:
+        # Convert sample to list of frames
+        def get_frames():
+            i = 0
+            while i < length - FRAMES:
+                yield np.hstack((mfcc[i: i + FRAMES], delta[i: i + FRAMES]))
+                i += 1
 
-    # Start timer
-    if timeit:
-        start_net = time.time()
+        # Creates batches from frames
+        frames = list(get_frames())
+    else:
+        # Convert sample to list of frames
+        def get_frames():
+            i = 0
+            while i < length - FRAMES:
+                yield np.hstack((mfcc[i: i + FRAMES], delta[i: i + FRAMES]))
+                i += 1
+        frames = list(get_frames())
 
-    # Creates batches from frames
-    frames = list(get_frames())
     batches, i, num_frames = [], 0, -1
     while i < len(frames):
         full = i + BATCH_SIZE >= len(frames)
@@ -514,6 +523,10 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
                 window.append(np.zeros((FRAMES, FEATURES)))
         batches.append(np.stack(window))
         i += BATCH_SIZE
+
+    # Start timer
+    if timeit:
+        start_net = time.time()
 
     # Predict for each frame
     offset = 15
@@ -539,8 +552,6 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
         accum_out = accum_out[:len(accum_out) - (BATCH_SIZE - num_frames)]
     accum_out = np.array(accum_out)
 
-    frames = np.array(frames)
-
     # Cut frames outside of prediction boundary
     raw_frames = raw_frames[offset:-offset]
     labels = labels[offset:-offset]
@@ -548,12 +559,22 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, only_plot_net=F
 
     # Plot results
     print('Displaying results for noise level:', noise_level)
-    Vis.plot_evaluation(raw_frames, labels, accum_out)
+    Vis.plot_evaluation(raw_frames, labels, accum_out, title=title)
 
 
-def train_models(data):
+def get_model(data, model, model_name, gamma=2):
     if OBJ_TRAIN_MODELS:
+        # Conv + GRU, large, γ = 2
+        set_seed()
+        train_net(model, data, title=model_name, gamma=gamma)
+    else:
+        model = load_net(title=model_name)
 
+    return model
+
+
+def train_all_models(data):
+    if OBJ_TRAIN_MODELS:
         # LSTM, small, γ = 0
         set_seed()
         net = Net(large=False)
@@ -647,20 +668,20 @@ def train_models(data):
     print('\nQualitative results:')
 
     print('\nnet:')
-    netvad(net, data, only_plot_net=False)
+    netvad(net, data, title='Neural Net (med)')
 
     print('\nnet_large:')
-    netvad(net_large, data, only_plot_net=True)
+    netvad(net_large, data, title='Neural Net (large)')
 
     print('\ngru:')
-    netvad(gru, data, only_plot_net=True)
+    netvad(gru, data, title='GRU (small)')
 
     print('\ngru_large:')
-    netvad(gru_large, data, only_plot_net=False)
+    netvad(gru_large, data, title='GRU (large)')
 
     print('\ndensenet:')
-    netvad(densenet, data, only_plot_net=True)
+    netvad(densenet, data, title='Dense Net (small)')
 
     print('\ndensenet_large:')
-    netvad(densenet_large, data, only_plot_net=True)
+    netvad(densenet_large, data, title='Dense Net (large)')
 
