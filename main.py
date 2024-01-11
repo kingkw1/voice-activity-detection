@@ -1,5 +1,4 @@
 from matplotlib import pyplot as plt
-from core.common import num_params
 from core.generator import test_generator, webrtc_vad_accuracy
 from core.prepare_files import prepare_files, prepare_strong_files
 from core.process_data import process_training_data, process_test_data
@@ -16,7 +15,7 @@ def main():
 
     # Set up data for use in neural networks
     data = process_training_data(speech_dataset, noise_dataset)
-    test_data = process_test_data(strong_video_audio_dataset)
+    strong_data = process_test_data(strong_video_audio_dataset)
 
     # Define data generator
     test_generator(data)
@@ -37,19 +36,19 @@ def main():
     # Evaluate model with sample data
     netvad(model, data, title='Training Data')
 
-    netvad(model, test_data, init_pos=400, title='STRONG Data')
+    netvad(model, strong_data, init_pos=400, title='STRONG Data')
 
-    # print('Accuracy (sensitivity 0, no noise):', webrtc_vad_accuracy(data, 0, 'None'))
-    # print('Accuracy (sensitivity 0, -15 dB noise level):', webrtc_vad_accuracy(data, 0, '-15'))
-    # print('Accuracy (sensitivity 0, -3 dB noise level):', webrtc_vad_accuracy(data, 0, '-3'))
-    #
-    # print('Accuracy (sensitivity 1, no noise):', webrtc_vad_accuracy(data, 1, 'None'))
-    # print('Accuracy (sensitivity 1, -15 dB noise level):', webrtc_vad_accuracy(data, 1, '-15'))
-    # print('Accuracy (sensitivity 1, -3 dB noise level):', webrtc_vad_accuracy(data, 1, '-3'))
-    #
-    # print('Accuracy (sensitivity 2, no noise):', webrtc_vad_accuracy(data, 2, 'None'))
-    # print('Accuracy (sensitivity 2, -15 dB noise level):', webrtc_vad_accuracy(data, 2, '-15'))
-    # print('Accuracy (sensitivity 2, -3 dB noise level):', webrtc_vad_accuracy(data, 2, '-3'))
+    print('Accuracy (sensitivity 0, no noise):', webrtc_vad_accuracy(data, 0, 'None'))
+    print('Accuracy (sensitivity 0, -15 dB noise level):', webrtc_vad_accuracy(data, 0, '-15'))
+    print('Accuracy (sensitivity 0, -3 dB noise level):', webrtc_vad_accuracy(data, 0, '-3'))
+
+    print('Accuracy (sensitivity 1, no noise):', webrtc_vad_accuracy(data, 1, 'None'))
+    print('Accuracy (sensitivity 1, -15 dB noise level):', webrtc_vad_accuracy(data, 1, '-15'))
+    print('Accuracy (sensitivity 1, -3 dB noise level):', webrtc_vad_accuracy(data, 1, '-3'))
+
+    print('Accuracy (sensitivity 2, no noise):', webrtc_vad_accuracy(data, 2, 'None'))
+    print('Accuracy (sensitivity 2, -15 dB noise level):', webrtc_vad_accuracy(data, 2, '-15'))
+    print('Accuracy (sensitivity 2, -3 dB noise level):', webrtc_vad_accuracy(data, 2, '-3'))
 
     plt.show()
 

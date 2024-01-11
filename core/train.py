@@ -472,7 +472,7 @@ def roc_auc(nets, data, noise_lvl, size_limit=0):
     return fig
 
 
-def far(net, data, size_limit=0, frr=1, plot=True):
+def far(net, data, size_limit=0, frr=1, model_name=''):
     """
     Computes the confusion matrix for a given network.
     """
@@ -507,7 +507,7 @@ def far(net, data, size_limit=0, frr=1, plot=True):
         # Return closest result if no good match found.
         return far, frr
 
-    print('Network metrics:')
+    print('Network metrics: ' + model_name)
 
     # For each noise level
     for lvl in NOISE_LEVELS:
@@ -612,7 +612,6 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, title=None, tim
 
 def get_model(data, model, model_name):
     if OBJ_TRAIN_MODELS:
-        # Conv + GRU, large, γ = 2
         set_seed()
         model_dict = MODEL_STACK[model_name]
         train_net(model, data, title=model_name, **model_dict['kwargs'])
@@ -643,10 +642,10 @@ def train_all_models(data):
     print('\nFixed FRR:')
     for model_name in trained_models.keys():
         model = trained_models[model_name]
-        far(model, data, frr=1)
+        far(model, data, frr=1, model_name=model_name)
 
     # Qualitative results
     print('\nQualitative results:')
     for model_name in trained_models.keys():
         model = trained_models[model_name]
-        netvad(model, data, title='Neural Net (med)')
+        netvad(model, data, title=model_name)
