@@ -57,14 +57,15 @@ class Vis:
     def plot_evaluation(frames, labels, predictions, title=None):
         raw = Vis._norm_raw(frames.flatten())
         time, time_labels = Vis._time_axis(raw, labels)
-
-        fig = plt.figure(1, figsize=(16, 3))
+        fig, ax = plt.subplots(1, 1, figsize=(16, 3))
         plt.title(title)
-        plt.plot(time, raw, 'k', label='video audio', alpha=0.5)
+        plt.plot(time, raw, 'k', label='audio', alpha=0.5)
         plt.plot(time_labels, labels - 0.5, 'k', label='labels', linewidth=2)
         plt.plot(time_labels, predictions-0.5, 'r--', label='prediction', linewidth=2)
         plt.xlabel('Time(s)')
         plt.tight_layout()
+        if title is not None:
+            plt.title(title)
         plt.legend()
         return fig
 
