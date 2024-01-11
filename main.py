@@ -24,19 +24,20 @@ def main():
     initialize_network()
     test_network(data)
 
+    # Train all data
+    train_all_models(data)
+    # train_all_models(strong_video_audio_dataset.data)
+    # plt.show()
+
     # Initialize the model & Load/Train it
     model = NickNet()
     model_name = 'gru'
-    model = get_model(data, model, model_name, gamma=2)
+    model = get_model(data, model, model_name)
 
     # Evaluate model with sample data
     netvad(model, data, title='Training Data')
 
     netvad(model, test_data, init_pos=400, title='STRONG Data')
-
-    train_all_models(data)
-    # train_all_models(strong_video_audio_dataset.data)
-    # plt.show()
 
     # print('Accuracy (sensitivity 0, no noise):', webrtc_vad_accuracy(data, 0, 'None'))
     # print('Accuracy (sensitivity 0, -15 dB noise level):', webrtc_vad_accuracy(data, 0, '-15'))

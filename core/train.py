@@ -21,6 +21,58 @@ NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
 
 
+MODEL_STACK = {
+    'net': {
+        'desc': "LSTM, small, γ = 0",
+        'model': Net(large=False),
+        'kwargs': {
+            'gamma': 0
+        }
+    },
+    'net_large': {
+        'desc': "LSTM, large, γ = 2",
+        'model': Net(),
+        'kwargs': {
+            'gamma': 2
+        }
+    },
+    'gru': {
+        'desc': "Conv + GRU, small, γ = 2",
+        'model': NickNet(large=False),
+        'kwargs': {
+            'gamma': 2
+        }
+    },
+    'gru_large': {
+        'desc': "Conv + GRU, large, γ = 2",
+        'model': NickNet(),
+        'kwargs': {
+            'gamma': 2
+        }
+    },
+    'densenet': {
+        'desc': "DenseNet, small, γ = 2",
+        'model': DenseNet(large=False),
+        'kwargs': {
+            'use_adam': False,
+            'lr': 1,
+            'momentum': 0.7,
+            'gamma': 2
+        }
+    },
+    'densenet_large': {
+        'desc': "DenseNet, large, γ = 2",
+        'model': DenseNet(large=True),
+        'kwargs': {
+            'use_adam': False,
+            'lr': 1,
+            'momentum': 0.7,
+            'gamma': 2
+        }
+    }
+}
+
+
 def test_network(data):
 
     # Test generator
@@ -374,10 +426,6 @@ def test_predict(net, data, size_limit, noise_level):
             out = net(X)
         except RuntimeError:
             out = net(X.cuda())
-        # if OBJ_CUDA:
-        #     X = X.cuda()
-        #
-        # out = net(X)
 
         if OBJ_CUDA:
             out = out.cpu()
@@ -562,11 +610,12 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, title=None, tim
     Vis.plot_evaluation(raw_frames, labels, accum_out, title=title)
 
 
-def get_model(data, model, model_name, gamma=2):
+def get_model(data, model, model_name):
     if OBJ_TRAIN_MODELS:
         # Conv + GRU, large, γ = 2
         set_seed()
-        train_net(model, data, title=model_name, gamma=gamma)
+        model_dict = MODEL_STACK[model_name]
+        train_net(model, data, title=model_name, **model_dict['kwargs'])
     else:
         model = load_net(title=model_name)
 
@@ -574,114 +623,30 @@ def get_model(data, model, model_name, gamma=2):
 
 
 def train_all_models(data):
-    if OBJ_TRAIN_MODELS:
-        # LSTM, small, γ = 0
-        set_seed()
-        net = Net(large=False)
-        train_net(net, data, title='net', gamma=0)
+    trained_models = {}
+    for model_name in MODEL_STACK.keys():
+        if OBJ_TRAIN_MODELS:
+            set_seed()
+            model_dict = MODEL_STACK[model_name]
+            model = model_dict['model']
+            train_net(model, data, title=model_name, **model_dict['kwargs'])
+        else:
+            model = load_net(title=model_name)
 
-        # LSTM, large, γ = 2
-        set_seed()
-        net_large = Net()
-        train_net(net_large, data, title='net_large', gamma=2)
+        trained_models[model_name] = model
 
-        # Conv + GRU, small, γ = 2
-        set_seed()
-        gru = NickNet(large=False)
-        train_net(gru, data, title='gru', gamma=2)
-
-        # Conv + GRU, large, γ = 2
-        set_seed()
-        gru_large = NickNet()
-        train_net(gru_large, data, title='gru_large', gamma=2)
-
-        # DenseNet, small, γ = 2
-        set_seed()
-        densenet = DenseNet(large=False)
-        train_net(densenet, data, title='densenet', use_adam=False, lr=1, momentum=0.7, gamma=2)
-
-        # DenseNet, large, γ = 2
-        set_seed()
-        densenet_large = DenseNet(large=True)
-        train_net(densenet, data, title='densenet_large', use_adam=False, lr=1, momentum=0.7, gamma=2)
-
-    else:
-        net = load_net(title='net')
-        net_large = load_net(title='net_large')
-        gru = load_net(title='gru')
-        gru_large = load_net(title='gru_large')
-        densenet = load_net(title='densenet')
-        densenet_large = load_net(title='densenet_large')
-
-    # ROC Curve
-    print('\nROC Curves:')
-
-    roc_auc({
-        'RNN': net,
-        'RNN (large)': net_large,
-        'Conv + RNN': gru,
-        'Conv + RNN (large)': gru_large,
-        'DenseNet': densenet,
-        'DenseNet (large)': densenet_large
-    }, data, 'None')
-
-    roc_auc({
-        'RNN': net,
-        'RNN (large)': net_large,
-        'Conv + RNN': gru,
-        'Conv + RNN (large)': gru_large,
-        'DenseNet': densenet,
-        'DenseNet (large)': densenet_large
-    }, data, '-15')
-
-    roc_auc({
-        'RNN': net,
-        'RNN (large)': net_large,
-        'Conv + RNN': gru,
-        'Conv + RNN (large)': gru_large,
-        'DenseNet': densenet,
-        'DenseNet (large)': densenet_large
-    }, data, '-3')
+    roc_auc(trained_models, data, 'None')
+    roc_auc(trained_models, data, '-15')
+    roc_auc(trained_models, data, '-3')
 
     # Fixed FRR
     print('\nFixed FRR:')
-
-    print('\nnet:')
-    far(net, data, frr=1)
-
-    print('\nnet_large:')
-    far(net_large, data, frr=1)
-
-    print('\ngru:')
-    far(gru, data, frr=1)
-
-    print('\ngru_large:')
-    far(gru_large, data, frr=1)
-
-    print('\ndensenet:')
-    far(densenet, data, frr=1)
-
-    print('\ndensenet_large:')
-    far(densenet_large, data, frr=1)
+    for model_name in trained_models.keys():
+        model = trained_models[model_name]
+        far(model, data, frr=1)
 
     # Qualitative results
     print('\nQualitative results:')
-
-    print('\nnet:')
-    netvad(net, data, title='Neural Net (med)')
-
-    print('\nnet_large:')
-    netvad(net_large, data, title='Neural Net (large)')
-
-    print('\ngru:')
-    netvad(gru, data, title='GRU (small)')
-
-    print('\ngru_large:')
-    netvad(gru_large, data, title='GRU (large)')
-
-    print('\ndensenet:')
-    netvad(densenet, data, title='Dense Net (small)')
-
-    print('\ndensenet_large:')
-    netvad(densenet_large, data, title='Dense Net (large)')
-
+    for model_name in trained_models.keys():
+        model = trained_models[model_name]
+        netvad(model, data, title='Neural Net (med)')
