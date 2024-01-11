@@ -9,7 +9,7 @@ from pydub import AudioSegment
 from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, NOISE_FOLDER, SPEECH_FOLDER, \
     STRONG_PROCESSED_MIC_FOLDER, STRONG_VIDEO_AUDIO_FOLDER
 
-OBJ_PREPARE_AUDIO = True
+OBJ_PREPARE_AUDIO = False
 
 # Frame size to use for the labelling.
 FRAME_SIZE_MS = 30
@@ -246,6 +246,8 @@ def prepare_strong_files():
 
     print('STRONG Dataset Labeled')
 
+    return strong_video_audio_dataset, strong_processed_mic_dataset
+
 
 def prepare_files():
 
@@ -260,7 +262,3 @@ def prepare_files():
     noise_dataset.collect_frames()
 
     return speech_dataset, noise_dataset
-
-
-if __name__ == '__main__':
-    prepare_strong_files()

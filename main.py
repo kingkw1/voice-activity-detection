@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 from core.common import num_params
 from core.generator import test_generator, webrtc_vad_accuracy
-from core.prepare_files import prepare_files
+from core.prepare_files import prepare_files, prepare_strong_files
 from core.process_data import process_data
 from core.train import test_network, initialize_network, set_seed, train_models
 from core.models import Net, NickNet, DenseNet
@@ -10,6 +10,9 @@ from core.models import Net, NickNet, DenseNet
 def main():
     # Prepare the audio files
     speech_dataset, noise_dataset = prepare_files()
+
+    # Prepare my labeled files
+    strong_video_audio_dataset, _ = prepare_strong_files()
 
     # Set up data for use in neural networks
     data = process_data(speech_dataset, noise_dataset)

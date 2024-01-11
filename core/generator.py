@@ -121,8 +121,8 @@ class DataGenerator:
                                  sample_width=SAMPLE_WIDTH, frame_rate=SAMPLE_RATE,
                                  channels=SAMPLE_CHANNELS))
 
-def test_generator(data):
 
+def test_generator(data):
     # Test generator features.
     generator = DataGenerator(data, size_limit=10000)
 
