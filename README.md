@@ -37,3 +37,8 @@ You will need to download the two datasets used for our study as well as the not
 Our provided notebook can be run in two different modes: either you download and pre-process all data from scratch (takes roughly 16 hours on a personal computer) or you download and execute with already processed data (27 GB).
 
 In any case, you will want to create a local directory that contain all necessary data and outputs. If you want to start from scratch, these are the two datasets that you need to collect: *LibriSpeech ASR corpus* and *QUT-NOISE*.
+
+
+### Installation (kk 2024/04/12)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install -r ./requirements.txt
