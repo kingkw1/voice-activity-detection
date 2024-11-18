@@ -22,6 +22,8 @@ SLICE_MAX = int(SLICE_MAX_MS / FRAME_SIZE_MS)
 # Calculate frame size in data points.
 FRAME_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
 
+np.float = float  # Temporary alias for compatibility
+
 
 def process_training_data(speech_dataset, noise_dataset):
     data = h5py_cache.File(DATA_FOLDER + '/data.hdf5', 'a', chunk_cache_mem_size=1024 ** 3)
