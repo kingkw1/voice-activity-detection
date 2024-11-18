@@ -2,6 +2,10 @@ import numpy as np
 import webrtcvad
 from matplotlib import pyplot as plt
 
+import sys
+from os import path
+# Add the parent directory to the PYTHONPATH
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import SAMPLE_RATE
 
 
