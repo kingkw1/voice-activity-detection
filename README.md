@@ -1,3 +1,8 @@
+# TODO (kk 11/18/2024):
+- confirm labeling process for ground truth -- visualize
+- test, iterate, & improve process on gameplay audio files that DONT include both participants audio
+- remove teammate speech from record in order to get individualize voice streams for each participant
+
 # Voice Activity Detection in Noisy Environments
 Voice Activity Detection (VAD) using deep learning. Supervised by Retune DSP.
 
@@ -26,17 +31,6 @@ Example of a label
 Associated NN prediction
 
 ![Prediction](https://i.imgur.com/Jckot75.png)
-
-### How to run?
-
-You will need to download the two datasets used for our study as well as the notebook itself. Instructions on the datasets are given in the following section. The notebook will automatically install any missing dependencies using pip. You may need to alter the global parameters slightly before running -- see notebook for more details.
-
-
-### Datasets
-
-Our provided notebook can be run in two different modes: either you download and pre-process all data from scratch (takes roughly 16 hours on a personal computer) or you download and execute with already processed data (27 GB).
-
-In any case, you will want to create a local directory that contain all necessary data and outputs. If you want to start from scratch, these are the two datasets that you need to collect: *LibriSpeech ASR corpus* and *QUT-NOISE*.
 
 
 ### Installation (kk 2024/04/12)
