@@ -1,15 +1,17 @@
 import glob
 from os import path
-
+import sys
 import h5py
 import numpy as np
 import webrtcvad
 from pydub import AudioSegment
 
+# Add the parent directory to the PYTHONPATH
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, NOISE_FOLDER, SPEECH_FOLDER, \
     STRONG_PROCESSED_MIC_FOLDER, STRONG_VIDEO_AUDIO_FOLDER
 
-OBJ_PREPARE_AUDIO = False
+OBJ_PREPARE_AUDIO = True
 
 # Frame size to use for the labelling.
 FRAME_SIZE_MS = 30

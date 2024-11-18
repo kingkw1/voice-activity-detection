@@ -2,7 +2,11 @@ import array
 import numpy as np
 import webrtcvad
 from pydub import AudioSegment
+import sys
+from os import path
 
+# Add the parent directory to the PYTHONPATH
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import NOISE_LEVELS_DB, SAMPLE_RATE, SAMPLE_WIDTH, SAMPLE_CHANNELS
 from core.visualization import Vis
 

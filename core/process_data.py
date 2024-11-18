@@ -3,7 +3,10 @@ import h5py_cache
 import numpy as np
 import python_speech_features
 from pydub import AudioSegment
-
+import sys
+from os import path
+# Add the parent directory to the PYTHONPATH
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_RATE, NOISE_LEVELS_DB, SAMPLE_WIDTH, SAMPLE_CHANNELS
 
 MFCC_WINDOW_FRAME_SIZE = 4
