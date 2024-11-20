@@ -9,7 +9,8 @@ from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_RATE, NOISE_LEVELS_DB, SAMPLE_WIDTH, SAMPLE_CHANNELS
 
-MFCC_WINDOW_FRAME_SIZE = 4
+SEED = 1337
+
 
 # Min/max length for slicing the voice files.
 SLICE_MIN_MS = 1000
@@ -17,6 +18,7 @@ SLICE_MAX_MS = 5000
 
 # Frame size to use for the labelling.
 FRAME_SIZE_MS = 30
+MFCC_WINDOW_FRAME_SIZE = 4
 
 # Convert slice ms to frame size.
 SLICE_MIN = int(SLICE_MIN_MS / FRAME_SIZE_MS)
@@ -25,16 +27,19 @@ SLICE_MAX = int(SLICE_MAX_MS / FRAME_SIZE_MS)
 # Calculate frame size in data points.
 FRAME_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
 
+CHUNK_CACHE_MEM_SIZE = 1024 ** 3
+
+
 np.float = float  # Temporary alias for compatibility
 
 
 def process_training_data(speech_dataset, noise_dataset):
-    data = h5py_cache.File(DATA_FOLDER + '/data.hdf5', 'a', chunk_cache_mem_size=1024 ** 3)
+    data = h5py_cache.File(DATA_FOLDER + '/data.hdf5', 'a', CHUNK_CACHE_MEM_SIZE)
 
     speech_data = speech_dataset.data
     noise_data = noise_dataset.data
 
-    np.random.seed(1337)
+    np.random.seed(SEED)
 
     if 'labels' not in data:
 
@@ -130,9 +135,9 @@ def process_training_data(speech_dataset, noise_dataset):
 
 
 def process_test_data(dataset):
-    data = h5py_cache.File(DATA_FOLDER + '/processed_strong_data.hdf5', 'a', chunk_cache_mem_size=1024 ** 3)
+    data = h5py_cache.File(DATA_FOLDER + '/processed_strong_data.hdf5', 'a', CHUNK_CACHE_MEM_SIZE)
 
-    np.random.seed(1337)
+    np.random.seed(SEED)
 
     if 'labels' not in data:
 

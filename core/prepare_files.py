@@ -14,10 +14,15 @@ from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE,
 OBJ_PREPARE_AUDIO = True
 
 # Frame size to use for the labelling.
-FRAME_SIZE_MS = 30
+FRAME_SIZE_MS = 30  
+BATCH_SIZE = 65536
 
 # Calculate frame size in data points.
-FRAME_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
+WINDOW_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
+N_WINDOWS_BUFFER = 4096
+
+# Labeling aggressiveness.
+VAD_AGGRESSIVENESS = 3
 
 
 class FileManager:
@@ -124,35 +129,35 @@ class FileManager:
 
         # Calculate number of frames needed.
         for raw in self.data['raw']:
-            frame_count += int((len(raw) + (FRAME_SIZE - (len(raw) % FRAME_SIZE))) / FRAME_SIZE)
+            frame_count += int((len(raw) + (WINDOW_SIZE - (len(raw) % WINDOW_SIZE))) / WINDOW_SIZE)
             print('Counting frames ({0} of {1})'.format(progress, self.get_track_count()), end='\r', flush=True)
             progress += 1
 
         # Create data set for frames.
         dt = np.dtype(np.int16)
-        self.data.create_dataset('frames', (frame_count, FRAME_SIZE), dtype=dt)
+        self.data.create_dataset('frames', (frame_count, WINDOW_SIZE), dtype=dt)
 
         progress = 0
 
         # Buffer to speed up merging as HDF5 is not fast with lots of indexing.
         buffer = np.array([])
-        buffer_limit = FRAME_SIZE * 4096
+        buffer_limit = WINDOW_SIZE * N_WINDOWS_BUFFER
 
         # Merge frames.
         for raw in self.data['raw']:
 
             # Setup raw data with zero padding on the end to fit frame size.
-            raw = np.concatenate((raw, np.zeros(FRAME_SIZE - (len(raw) % FRAME_SIZE))))
+            raw = np.concatenate((raw, np.zeros(WINDOW_SIZE - (len(raw) % WINDOW_SIZE))))
 
             # Add to buffer.
             buffer = np.concatenate((buffer, raw))
 
             # If buffer is not filled up and we are not done, keep filling the buffer up.
-            if len(buffer) < buffer_limit and progress + (len(buffer) / FRAME_SIZE) < frame_count:
+            if len(buffer) < buffer_limit and progress + (len(buffer) / WINDOW_SIZE) < frame_count:
                 continue
 
             # Get frames.
-            frames = np.array(np.split(buffer, len(buffer) / FRAME_SIZE))
+            frames = np.array(np.split(buffer, len(buffer) / WINDOW_SIZE))
             buffer = np.array([])
 
             # Add frames to list.
@@ -164,7 +169,7 @@ class FileManager:
         self.data.flush()
         print('\nDone!')
 
-    def label_frames(self, batch_size=65536):
+    def label_frames(self):
         """
         Takes all audio frames and labels them using the WebRTC VAD.
         """
@@ -177,7 +182,7 @@ class FileManager:
             print('Could not find any frames!')
             return
 
-        vad = webrtcvad.Vad(0)
+        vad = webrtcvad.Vad(VAD_AGGRESSIVENESS)
 
         frame_count = len(self.data['frames'])
         progress = 0
@@ -187,10 +192,10 @@ class FileManager:
         self.data.create_dataset('labels', (frame_count,), dtype=dt)
 
         # Label all the frames.
-        for pos in range(0, frame_count, batch_size):
-            frames = self.data['frames'][pos: pos + batch_size]
+        for pos in range(0, frame_count, BATCH_SIZE):
+            frames = self.data['frames'][pos: pos + BATCH_SIZE]
             labels = [1 if vad.is_speech(f.tobytes(), sample_rate=SAMPLE_RATE) else 0 for f in frames]
-            self.data['labels'][pos: pos + batch_size] = np.array(labels)
+            self.data['labels'][pos: pos + BATCH_SIZE] = np.array(labels)
 
             progress += len(labels)
             print('Labelling frames ({0} of {1})'.format(progress, frame_count), end='\r', flush=True)
