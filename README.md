@@ -36,3 +36,4 @@ Associated NN prediction
 ### Installation (kk 2024/04/12)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install -r ./requirements.txt
+sudo apt install ffmpeg
