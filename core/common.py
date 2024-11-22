@@ -66,3 +66,13 @@ def traverse_datasets(hdf_file):
 
     return None
 
+
+def create_dictionary(list1, list2):
+    dictionary = {}
+    for file1 in sorted(list1):
+        for file2 in sorted(list2):
+            experiment = file2[0:6]
+            if file1.startswith(experiment):
+                dictionary[file2] = file1
+                break
+    return dictionary
