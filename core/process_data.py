@@ -1,3 +1,32 @@
+"""
+This module processes speech and noise datasets to generate training and test data for voice activity detection.
+
+The script performs the following tasks:
+- Adds noise to speech data for training.
+- Computes MFCC (Mel-Frequency Cepstral Coefficients) features and their deltas for both training and test data.
+- Stores the processed data in HDF5 files.
+
+MFCC is a representation of the short-term power spectrum of a sound, which is commonly used in speech and audio processing. 
+This script uses MFCC to extract features from audio data, which are then used for training and testing a voice activity detection model.
+
+Functions:
+- process_training_data(speech_dataset, noise_dataset): Processes the training data by adding noise to the speech data.
+- process_test_data(dataset): Processes the test data by computing MFCC features and their deltas.
+- process_test_frames(data_frames, align_frames): Computes MFCC features and their deltas for test frames.
+- add_noise(speech_frames, noise_frames, align_frames, noise_level_db): Adds noise to speech frames and computes MFCC features and their deltas.
+
+Constants:
+- SEED: Random seed for reproducibility.
+- SLICE_MIN_MS: Minimum length for slicing the voice files in milliseconds.
+- SLICE_MAX_MS: Maximum length for slicing the voice files in milliseconds.
+- FRAME_SIZE_MS: Frame size in milliseconds for labelling.
+- MFCC_WINDOW_FRAME_SIZE: Window frame size for MFCC computation.
+- SLICE_MIN: Minimum length for slicing the voice files in frames.
+- SLICE_MAX: Maximum length for slicing the voice files in frames.
+- FRAME_SIZE: Frame size in data points.
+- CHUNK_CACHE_MEM_SIZE: Cache memory size for HDF5 file chunks.
+"""
+
 import array
 import h5py_cache
 import numpy as np
@@ -9,8 +38,8 @@ from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_RATE, NOISE_LEVELS_DB, SAMPLE_WIDTH, SAMPLE_CHANNELS
 
+# Random seed for reproducibility.
 SEED = 1337
-
 
 # Min/max length for slicing the voice files.
 SLICE_MIN_MS = 1000
@@ -34,6 +63,12 @@ np.float = float  # Temporary alias for compatibility
 
 
 def process_training_data(speech_dataset, noise_dataset):
+    """
+    Process the training data by adding noise to the speech data.
+    :param speech_dataset: The speech data set.
+    :param noise_dataset: The noise data set.
+    :return: The processed data set.    
+    """
     data = h5py_cache.File(DATA_FOLDER + '/data.hdf5', 'a', CHUNK_CACHE_MEM_SIZE)
 
     speech_data = speech_dataset.data
@@ -135,61 +170,73 @@ def process_training_data(speech_dataset, noise_dataset):
 
 
 def process_test_data(dataset):
+    """
+    Process the test data by computing MFCC features and their deltas.
+    :param dataset: The speech data set.
+    :return: The processed data set.
+    """
+    # Open or create an HDF5 file to store the processed data
     data = h5py_cache.File(DATA_FOLDER + '/processed_strong_data.hdf5', 'a', CHUNK_CACHE_MEM_SIZE)
 
+    # Set the random seed for reproducibility
     np.random.seed(SEED)
 
+    # Check if labels already exist in the dataset
     if 'labels' not in data:
 
+        # Get the length of the speech data frames
         l = len(dataset.data['frames'])
 
         pos = 0
-        # Split speech data randomly within the given slice length.
         slices = []
+
+        # Split speech data randomly within the given slice length
         while pos + SLICE_MIN < l:
             slice_indexing = (pos, pos + SLICE_MAX)
             slices.append(slice_indexing)
             pos = slice_indexing[1]
 
-        # Get total frame count.
+        # Get total frame count
         total = l + pos + MFCC_WINDOW_FRAME_SIZE
 
-        # Create data set for input.
+        # Create datasets for frames, MFCC, and delta MFCC for each noise level
         for key in NOISE_LEVELS_DB:
             data.create_dataset('frames-' + key, (total, FRAME_SIZE), dtype=np.dtype(np.int16))
             data.create_dataset('mfcc-' + key, (total, 12), dtype=np.dtype(np.float32))
             data.create_dataset('delta-' + key, (total, 12), dtype=np.dtype(np.float32))
 
-        # Create data set for labels.
+        # Create dataset for labels
         dt = np.dtype(np.int8)
         data.create_dataset('labels', (total,), dtype=dt)
 
         pos = 0
 
-        # Construct speech data.
+        # Process each slice of speech data
         for s in slices:
             frames = dataset.data['frames'][s[0]: s[1]]
             labels = dataset.data['labels'][s[0]: s[1]]
 
-            # Get previous frames to align MFCC window with new data.
+            # Get previous frames to align MFCC window with new data
             if pos == 0:
                 align_frames = np.zeros((MFCC_WINDOW_FRAME_SIZE - 1, FRAME_SIZE))
             else:
                 align_frames = data['frames-' + key][pos - MFCC_WINDOW_FRAME_SIZE + 1: pos]
 
-            # Get frames, MFCC and delta of MFCC.
+            # Get frames, MFCC, and delta of MFCC
             frames, mfcc, delta = process_test_frames(np.int16(frames), np.int16(align_frames))
 
+            # Store the frames, MFCC, and delta MFCC in the dataset
             data['frames-' + key][pos: pos + len(labels)] = frames
             data['mfcc-' + key][pos: pos + len(labels)] = mfcc
             data['delta-' + key][pos: pos + len(labels)] = delta
 
-            # Add labels.
+            # Add labels to the dataset
             data['labels'][pos: pos + len(labels)] = labels
 
             pos += len(labels)
             print('Generating data ({0:.2f} %)'.format((pos * 100) / total), end='\r', flush=True)
 
+        # Flush the data to the HDF5 file
         data.flush()
 
         print('\nDone!')
@@ -197,7 +244,6 @@ def process_test_data(dataset):
         print('Speech data already generated. Skipping.')
 
     return data
-
 
 def process_test_frames(data_frames, align_frames):
     # Convert to tracks.
