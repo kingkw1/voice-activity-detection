@@ -1,4 +1,3 @@
-import glob
 from os import path, listdir
 import sys
 import h5py
@@ -65,8 +64,11 @@ class STRONGFileManager():
         """
 
         print('Found {0} tracks to check.'.format(self.get_track_count()))
-        progress = 1
 
+        if 'raw' in self.data and 'mic' in self.data:
+            print('Files already prepared.')
+            return
+        
         # Setup raw data set.
         if 'raw' not in self.data:
             dt = h5py.special_dtype(vlen=np.dtype(np.int16))
@@ -78,6 +80,7 @@ class STRONGFileManager():
             self.data.create_dataset('mic', (self.get_track_count(),), dtype=dt)
 
         # Convert files to desired format and save raw content.
+        progress = 1
         for i, file in enumerate(self.data['files']):
 
             print('Processing {0} of {1}'.format(progress, self.get_track_count()), end='\r', flush=True)
@@ -123,6 +126,10 @@ class STRONGFileManager():
         for use with the sample generator.
         """
 
+        if 'frames' in self.data:
+            print('Frame merging already done. Skipping.')
+            return
+        
         # Calculate number of frames in all the raw data.
         frame_count = self.count_frames()
         
@@ -202,6 +209,10 @@ class STRONGFileManager():
         Takes all audio frames and labels them using the WebRTC VAD.
         """
 
+        if 'labels' in self.data:
+            print('Frame labelling already done. Skipping.')
+            return
+        
         vad = webrtcvad.Vad(VAD_AGGRESSIVENESS)
 
         frame_count = len(self.data['mic_frames'])
@@ -299,6 +310,8 @@ def prepare_strong_files():
     strong_dataset.prepare_files(normalize_=True)
     strong_dataset.collect_frames()
     strong_dataset.label_frames()
+
+    return strong_dataset
 
 
 if __name__ == '__main__':
