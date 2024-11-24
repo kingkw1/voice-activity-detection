@@ -5,10 +5,12 @@ from pydub import AudioSegment
 import sys
 from os import path
 
+
 # Add the parent directory to the PYTHONPATH
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import NOISE_LEVELS_DB, SAMPLE_RATE, SAMPLE_WIDTH, SAMPLE_CHANNELS
 from core.visualization import Vis
+from core.prepare_strong_files import STRONGFileManager
 
 OBJ_SHOW_PLAYABLE_TRACKS = True
 
@@ -16,11 +18,13 @@ OBJ_SHOW_PLAYABLE_TRACKS = True
 class DataGenerator:
 
     def __init__(self, data, size_limit=0):
+        # Initialize the DataGenerator with data and size limit
         self.data = data
         self.size = size_limit if size_limit > 0 else len(data['labels'])
         self.data_mode = 0  # Default to training data
 
     def set_noise_level_db(self, level, reset_data_mode=True):
+        # Set the noise level in dB and optionally reset data mode
 
         if level not in NOISE_LEVELS_DB:
             raise Exception(f'Noise level "{level}" not supported! Options are: {list(NOISE_LEVELS_DB.keys())}')
@@ -37,6 +41,7 @@ class DataGenerator:
                 self.use_test_data()
 
     def setup_generation(self, frame_count, step_size, batch_size, val_part=0.1, test_part=0.1):
+        # Setup the parameters for data generation
 
         self.frame_count = frame_count
         self.step_size = step_size
@@ -52,6 +57,7 @@ class DataGenerator:
         self.test_size = self.size - self.test_index
 
     def use_train_data(self):
+        # Switch to training data mode
 
         # Calculate how many batches we can construct from our given parameters.
         n = int((self.train_size - self.frame_count) / self.step_size) + 1
@@ -60,6 +66,7 @@ class DataGenerator:
         self.data_mode = 0
 
     def use_validate_data(self):
+        # Switch to validation data mode
 
         # Calculate how many batches we can construct from our given parameters.
         n = int((self.val_size - self.frame_count) / self.step_size) + 1
@@ -68,6 +75,7 @@ class DataGenerator:
         self.data_mode = 1
 
     def use_test_data(self):
+        # Switch to test data mode
 
         # Calculate how many batches we can construct from our given parameters.
         n = int((self.test_size - self.frame_count) / self.step_size) + 1
@@ -76,6 +84,7 @@ class DataGenerator:
         self.data_mode = 2
 
     def get_data(self, index_from, index_to):
+        # Retrieve data between specified indexes
         try:
             frames = self.data['frames-' + self.noise_level][index_from: index_to]
             mfcc = self.data['mfcc-' + self.noise_level][index_from: index_to]
@@ -89,6 +98,7 @@ class DataGenerator:
             return frames, None, None, labels
 
     def get_batch(self, index):
+        # Get a batch of data based on the current index
 
         # Get current position.
         pos = self.initial_pos + (self.batch_size * index) * self.step_size
@@ -117,6 +127,7 @@ class DataGenerator:
         return x, y
 
     def plot_data(self, index_from, index_to, show_track=False):
+        # Plot data between specified indexes
 
         frames, mfcc, delta, labels = self.get_data(index_from, index_to)
 
@@ -147,6 +158,8 @@ def test_generator(data):
 
 
 def webrtc_vad_accuracy(data, sensitivity, noise_level):
+    # Calculate the accuracy of WebRTC VAD
+
     vad = webrtcvad.Vad(sensitivity)
     generator = DataGenerator(data, size_limit=0)
 
@@ -161,7 +174,6 @@ def webrtc_vad_accuracy(data, sensitivity, noise_level):
     batch_size = 1000
 
     for pos in range(0, generator.size, batch_size):
-
         frames, _, _, labels = generator.get_data(pos, pos + batch_size)
 
         for i, frame in enumerate(frames):
@@ -169,3 +181,13 @@ def webrtc_vad_accuracy(data, sensitivity, noise_level):
                 correct += 1
 
     return (correct / generator.size)
+
+
+if __name__ == '__main__':
+    
+    strong_dataset = STRONGFileManager('strong')
+
+    if 'frames' not in strong_dataset.data.keys():
+        raise Exception('Strong dataset file does not contain any frames!')
+    
+    test_generator(strong_dataset.data)
