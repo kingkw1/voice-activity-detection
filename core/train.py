@@ -1,3 +1,34 @@
+"""
+This script provides functionality for training, testing, and evaluating various neural network models for voice activity detection (VAD). It includes the following key components:
+
+1. **Imports and Constants**:
+    - Imports necessary libraries and modules.
+    - Defines constants and configurations for training and testing.
+
+2. **Model Definitions**:
+    - Defines a stack of models with different configurations and parameters.
+
+3. **Utility Functions**:
+    - `test_network(data)`: Tests the network with given data.
+    - `initialize_network()`: Initializes the network and prints the number of parameters.
+    - `FocalLoss`: Custom loss function for handling class imbalance.
+    - `net_path(epoch, title)`: Generates the file path for saving/loading network models.
+    - `save_net(net, epoch, title)`: Saves the network model to disk.
+    - `load_net(epoch, title)`: Loads the network model from disk.
+    - `train_net(net, data, ...)`: Trains the network with specified parameters.
+    - `set_seed(seed)`: Sets the random seed for reproducibility.
+    - `test_predict(net, data, size_limit, noise_level)`: Computes predictions on test data using the given network.
+    - `roc_auc(nets, data, noise_lvl, size_limit)`: Generates a ROC curve for the given network and data.
+    - `far(net, data, size_limit, frr, model_name)`: Computes the confusion matrix for a given network.
+    - `netvad(net, data, noise_level, init_pos, length, title, timeit)`: Generates a sample and runs it through the network, plotting the results.
+    - `get_model(data, model, model_name)`: Trains or loads a model based on the configuration.
+    - `train_all_models(data)`: Trains all models in the stack and evaluates them.
+
+4. **MFCC (Mel-Frequency Cepstral Coefficients)**:
+    - MFCC is a feature extraction technique commonly used in audio processing. It represents the short-term power spectrum of sound and is used to capture the characteristics of audio signals.
+    - In this script, MFCC is used to extract features from audio data, which are then fed into the neural network models for training and evaluation.
+"""
+
 import os
 import time
 import torch
@@ -20,7 +51,7 @@ from core.models import Net, NickNet, DenseNet
 from core.visualization import Vis
 
 
-OBJ_TRAIN_MODELS = False
+OBJ_TRAIN_MODELS = True
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
 
@@ -33,47 +64,47 @@ MODEL_STACK = {
             'gamma': 0
         }
     },
-    'net_large': {
-        'desc': "LSTM, large, γ = 2",
-        'model': Net(),
-        'kwargs': {
-            'gamma': 2
-        }
-    },
-    'gru': {
-        'desc': "Conv + GRU, small, γ = 2",
-        'model': NickNet(large=False),
-        'kwargs': {
-            'gamma': 2
-        }
-    },
-    'gru_large': {
-        'desc': "Conv + GRU, large, γ = 2",
-        'model': NickNet(),
-        'kwargs': {
-            'gamma': 2
-        }
-    },
-    'densenet': {
-        'desc': "DenseNet, small, γ = 2",
-        'model': DenseNet(large=False),
-        'kwargs': {
-            'use_adam': False,
-            'lr': 1,
-            'momentum': 0.7,
-            'gamma': 2
-        }
-    },
-    'densenet_large': {
-        'desc': "DenseNet, large, γ = 2",
-        'model': DenseNet(large=True),
-        'kwargs': {
-            'use_adam': False,
-            'lr': 1,
-            'momentum': 0.7,
-            'gamma': 2
-        }
-    }
+    # 'net_large': {
+    #     'desc': "LSTM, large, γ = 2",
+    #     'model': Net(),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'gru': {
+    #     'desc': "Conv + GRU, small, γ = 2",
+    #     'model': NickNet(large=False),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'gru_large': {
+    #     'desc': "Conv + GRU, large, γ = 2",
+    #     'model': NickNet(),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'densenet': {
+    #     'desc': "DenseNet, small, γ = 2",
+    #     'model': DenseNet(large=False),
+    #     'kwargs': {
+    #         'use_adam': False,
+    #         'lr': 1,
+    #         'momentum': 0.7,
+    #         'gamma': 2
+    #     }
+    # },
+    # 'densenet_large': {
+    #     'desc': "DenseNet, large, γ = 2",
+    #     'model': DenseNet(large=True),
+    #     'kwargs': {
+    #         'use_adam': False,
+    #         'lr': 1,
+    #         'momentum': 0.7,
+    #         'gamma': 2
+    #     }
+    # }
 }
 
 
@@ -497,11 +528,26 @@ def far(net, data, size_limit=0, frr=1, model_name=''):
 
         # Compute FAR for a fixed FRR
         while t < 1.0:
+            cm = confusion_matrix(y_true, apply_threshold(y_score, t))
 
-            tn, fp, fn, tp = confusion_matrix(y_true, apply_threshold(y_score, t)).ravel()
+            # Check if confusion matrix has the expected shape
+            if cm.shape == (2, 2):
+                tn, fp, fn, tp = cm.ravel()
+            else:
+                # Handle the case where the confusion matrix does not have the expected shape
+                tn, fp, fn, tp = 0, 0, 0, 0
+                if cm.shape == (1, 1):
+                    if y_true[0] == 0:
+                        tn = cm[0, 0]
+                    else:
+                        tp = cm[0, 0]
+                elif cm.shape == (1, 2):
+                    tn, fp = cm[0, 0], cm[0, 1]
+                elif cm.shape == (2, 1):
+                    fn, tp = cm[1, 0], cm[0, 0]
 
-            far = (fp * 100) / (fp + tn)
-            frr = (fn * 100) / (fn + tp)
+            far = (fp * 100) / (fp + tn) if (fp + tn) > 0 else 0
+            frr = (fn * 100) / (fn + tp) if (fn + tp) > 0 else 0
 
             if frr >= frr_target:
                 return far, frr
@@ -638,9 +684,9 @@ def train_all_models(data):
 
         trained_models[model_name] = model
 
-    roc_auc(trained_models, data, 'None')
-    roc_auc(trained_models, data, '-15')
-    roc_auc(trained_models, data, '-3')
+    # roc_auc(trained_models, data, 'None')
+    # roc_auc(trained_models, data, '-15')
+    # roc_auc(trained_models, data, '-3')
 
     # Fixed FRR
     print('\nFixed FRR:')
