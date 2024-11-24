@@ -528,7 +528,7 @@ def far(net, data, size_limit=0, frr=1, model_name=''):
 
         # Compute FAR for a fixed FRR
         while t < 1.0:
-            cm = confusion_matrix(y_true, apply_threshold(y_score, t))
+            cm = confusion_matrix(y_true, apply_threshold(y_score, t), labels=[0, 1])
 
             # Check if confusion matrix has the expected shape
             if cm.shape == (2, 2):
@@ -674,7 +674,8 @@ def get_model(data, model, model_name):
 def train_all_models(data):
     trained_models = {}
     for model_name in MODEL_STACK.keys():
-        if OBJ_TRAIN_MODELS:
+        model_path = net_path(-1, model_name)
+        if OBJ_TRAIN_MODELS and not os.path.exists(model_path):
             set_seed()
             model_dict = MODEL_STACK[model_name]
             model = model_dict['model']
@@ -684,9 +685,18 @@ def train_all_models(data):
 
         trained_models[model_name] = model
 
-    # roc_auc(trained_models, data, 'None')
-    # roc_auc(trained_models, data, '-15')
-    # roc_auc(trained_models, data, '-3')
+    for model_name in trained_models.keys():
+        fig = roc_auc(trained_models, data, 'None')
+        fig.savefig(os.path.join(os.getcwd(), 'models', f'{model_name}_roc_auc_None.png'))
+        plt.close(fig)
+
+        fig = roc_auc(trained_models, data, '-15')
+        fig.savefig(os.path.join(os.getcwd(), 'models', f'{model_name}_roc_auc_-15.png'))
+        plt.close(fig)
+
+        fig = roc_auc(trained_models, data, '-3')
+        fig.savefig(os.path.join(os.getcwd(), 'models', f'{model_name}_roc_auc_-3.png'))
+        plt.close(fig)
 
     # Fixed FRR
     print('\nFixed FRR:')
