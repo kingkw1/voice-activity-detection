@@ -216,6 +216,9 @@ def process_test_data(dataset):
             frames = dataset.data['frames'][s[0]: s[1]]
             labels = dataset.data['labels'][s[0]: s[1]]
 
+            # Print class distribution for debugging
+            print(f"Slice {s} - Class distribution:", np.bincount(labels))
+
             # Get previous frames to align MFCC window with new data
             if pos == 0:
                 align_frames = np.zeros((MFCC_WINDOW_FRAME_SIZE - 1, FRAME_SIZE))
@@ -235,6 +238,9 @@ def process_test_data(dataset):
 
             pos += len(labels)
             print('Generating data ({0:.2f} %)'.format((pos * 100) / total), end='\r', flush=True)
+
+        # Print overall class distribution for debugging
+        print("Overall class distribution:", np.bincount(data['labels'][:pos]))
 
         # Flush the data to the HDF5 file
         data.flush()
