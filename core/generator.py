@@ -109,7 +109,7 @@ class DataGenerator:
             print(f'Loaded data from {index_from} to {index_to} without noise level')
             print(f'Class distribution in loaded data: {np.bincount(labels)}')
             return frames, None, None, labels
-
+        
     def get_batch(self, index):
         # Get a batch of data based on the current index
 
@@ -129,17 +129,19 @@ class DataGenerator:
             print(f"Batch {index} - Skipping due to missing class")
             return [], []
 
-        # Oversample the minority class
-        if len(class_1_indices) < len(class_0_indices):
-            class_1_indices = resample(class_1_indices, replace=True, n_samples=len(class_0_indices), random_state=SEED)
-        else:
-            class_0_indices = resample(class_0_indices, replace=True, n_samples=len(class_1_indices), random_state=SEED)
+        # Determine the number of samples to take from each class
+        num_samples_per_class = min(len(class_0_indices), len(class_1_indices), self.batch_size // 2)
 
-        balanced_indices = np.hstack((class_0_indices, class_1_indices))
+        # Sample from each class
+        sampled_class_0_indices = np.random.choice(class_0_indices, num_samples_per_class, replace=False)
+        sampled_class_1_indices = np.random.choice(class_1_indices, num_samples_per_class, replace=False)
+
+        # Combine and shuffle the sampled indices
+        balanced_indices = np.hstack((sampled_class_0_indices, sampled_class_1_indices))
         np.random.shuffle(balanced_indices)
 
         x, y = [], []
-        for i in balanced_indices[:self.batch_size]:
+        for i in balanced_indices:
             X = np.hstack((mfcc[i: i + self.frame_count], delta[i: i + self.frame_count]))
             x.append(X)
             y.append(labels[i])
@@ -170,7 +172,8 @@ def test_generator(data):
     # Test generator features.
     generator = DataGenerator(data, size_limit=10000)
 
-    generator.setup_generation(frame_count=100, step_size=1, batch_size=2)
+    # Adjust frame_count to a larger value to increase the likelihood of including class 1 samples
+    generator.setup_generation(frame_count=200, step_size=1, batch_size=2)
     generator.set_noise_level_db('-3')
     generator.use_train_data()
 
@@ -186,7 +189,7 @@ def test_generator(data):
 
         # Check if batch is not empty before accessing elements
         if X and y:
-            print(f'Load a few frames into memory:\n{X[0]}\n\nCorresponding label: {y[0]}')
+            print(f'Load a few frames into memory:\n{X[0][:5]}\n\nCorresponding label: {y[0]}')
         else:
             print(f'Batch {i} is empty.')
 
