@@ -56,6 +56,9 @@ class DataGenerator:
         self.val_size = self.test_index - self.val_index
         self.test_size = self.size - self.test_index
 
+        # Print data split sizes for debugging
+        print(f"Train size: {self.train_size}, Validation size: {self.val_size}, Test size: {self.test_size}")
+
     def use_train_data(self):
         # Switch to training data mode
 
@@ -123,6 +126,9 @@ class DataGenerator:
 
             # Increment window using set step size
             i += self.step_size
+
+        # Print batch class distribution for debugging
+        print(f"Batch {index} - Class distribution:", np.bincount(y))
 
         return x, y
 
