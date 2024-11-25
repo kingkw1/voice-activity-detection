@@ -94,10 +94,14 @@ class DataGenerator:
             delta = self.data['delta-' + self.noise_level][index_from: index_to]
             labels = self.data['labels'][index_from: index_to]
 
+            print(f'Loaded data from {index_from} to {index_to} for noise level {self.noise_level}')
+            print(f'Class distribution in loaded data: {np.bincount(labels)}')
             return frames, mfcc, delta, labels
         except KeyError:
             frames = self.data['frames'][index_from: index_to]
             labels = self.data['labels'][index_from: index_to]
+            print(f'Loaded data from {index_from} to {index_to} without noise level')
+            print(f'Class distribution in loaded data: {np.bincount(labels)}')
             return frames, None, None, labels
 
     def get_batch(self, index):
@@ -156,8 +160,18 @@ def test_generator(data):
     generator.setup_generation(frame_count=3, step_size=1, batch_size=2)
     generator.set_noise_level_db('-3')
     generator.use_train_data()
-    X, y = generator.get_batch(0)
 
+    # Print overall class distribution
+    labels = data['labels']
+    label_counts = np.bincount(labels)
+    for label, count in enumerate(label_counts):
+        print(f'Label {label}: {count}')
+
+    for i in range(3):
+        X, y = generator.get_batch(i)
+        print(f'Batch {i} - Class distribution: {np.bincount(y)}')
+
+    X, y = generator.get_batch(0)
     print(f'Load a few frames into memory:\n{X[0]}\n\nCorresponding label: {y[0]}')
 
     # generator.plot_data(0, 1000)
@@ -191,9 +205,9 @@ def webrtc_vad_accuracy(data, sensitivity, noise_level):
 
 if __name__ == '__main__':
     
-    strong_dataset = STRONGFileManager('strong')
+    strong_dataset = STRONGFileManager('processed_strong_data')
 
-    if 'frames' not in strong_dataset.data.keys():
-        raise Exception('Strong dataset file does not contain any frames!')
+    # if 'frames' not in strong_dataset.data.keys():
+    #     raise Exception('Strong dataset file does not contain any frames!')
     
     test_generator(strong_dataset.data)
