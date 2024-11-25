@@ -48,12 +48,15 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import num_params, accuracy, BATCH_SIZE, FRAMES, FEATURES, OBJ_CUDA, NOISE_LEVELS_DB
 from core.generator import DataGenerator
 from core.models import Net, NickNet, DenseNet
+from core.prepare_strong_files import prepare_strong_files
+from core.process_data import process_test_data
 from core.visualization import Vis
 
 
 OBJ_TRAIN_MODELS = True
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
+MAX_EPOCHS = 14
 
 
 MODEL_STACK = {
@@ -191,7 +194,7 @@ def save_net(net, epoch, title='net'):
     torch.save(net, net_path(epoch, title))
 
 
-def load_net(epoch=14, title='net'):
+def load_net(epoch=MAX_EPOCHS, title='net'):
     if OBJ_CUDA:
         return torch.load(net_path(epoch, title))
     else:
@@ -452,8 +455,8 @@ def test_predict(net, data, size_limit, noise_level):
     y_true, y_score = [], []
 
     for i in range(generator.batch_count):
-
         X, y = generator.get_batch(i)
+        print(f"Batch {i} - Class distribution:", np.bincount(y))
         X = Variable(torch.from_numpy(np.array(X)).float())
         y = Variable(torch.from_numpy(np.array(y))).long()
 
@@ -471,6 +474,9 @@ def test_predict(net, data, size_limit, noise_level):
 
         # Add probabilities for positive labels.
         y_score.extend(out.data.numpy()[:, 1])
+
+    print("y_true distribution:", np.bincount(y_true))
+    print("y_score distribution:", np.unique(y_score, return_counts=True))
 
     return y_true, y_score
 
@@ -674,7 +680,7 @@ def get_model(data, model, model_name):
 def train_all_models(data):
     trained_models = {}
     for model_name in MODEL_STACK.keys():
-        model_path = net_path(-1, model_name)
+        model_path = net_path(MAX_EPOCHS, model_name)
         if OBJ_TRAIN_MODELS and not os.path.exists(model_path):
             set_seed()
             model_dict = MODEL_STACK[model_name]
@@ -682,6 +688,9 @@ def train_all_models(data):
             train_net(model, data, title=model_name, **model_dict['kwargs'])
         else:
             model = load_net(title=model_name)
+
+        # Print model summary
+        print(model)
 
         trained_models[model_name] = model
 
@@ -709,3 +718,14 @@ def train_all_models(data):
     for model_name in trained_models.keys():
         model = trained_models[model_name]
         netvad(model, data, title=model_name)
+
+
+if __name__ == "__main__":
+
+    # Prepare the STRONG Data
+    labeled_strong_dataset = prepare_strong_files()
+    train_data = process_test_data(labeled_strong_dataset)
+
+    # test_generator(train_data)
+    initialize_network()
+    train_all_models(train_data)
