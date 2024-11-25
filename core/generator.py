@@ -4,7 +4,7 @@ import webrtcvad
 from pydub import AudioSegment
 import sys
 from os import path
-
+from sklearn.utils import resample
 
 # Add the parent directory to the PYTHONPATH
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -13,6 +13,7 @@ from core.visualization import Vis
 from core.prepare_strong_files import STRONGFileManager
 
 OBJ_SHOW_PLAYABLE_TRACKS = True
+SEED = 1337
 
 
 class DataGenerator:
@@ -22,6 +23,11 @@ class DataGenerator:
         self.data = data
         self.size = size_limit if size_limit > 0 else len(data['labels'])
         self.data_mode = 0  # Default to training data
+
+        # Shuffle data indices
+        self.indices = np.arange(self.size)
+        np.random.seed(SEED)
+        np.random.shuffle(self.indices)
 
     def set_noise_level_db(self, level, reset_data_mode=True):
         # Set the noise level in dB and optionally reset data mode
@@ -110,26 +116,33 @@ class DataGenerator:
         # Get current position.
         pos = self.initial_pos + (self.batch_size * index) * self.step_size
 
-        # Get all data needed.
-        l = self.frame_count + self.step_size * self.batch_size
+        # Further increase the size of data slices
+        l = self.frame_count + self.step_size * self.batch_size * 100
         frames, mfcc, delta, labels = self.get_data(pos, pos + l)
 
-        x, y, i = [], [], 0
+        # Stratified sampling to ensure balanced batches
+        class_0_indices = np.where(labels == 0)[0]
+        class_1_indices = np.where(labels == 1)[0]
 
-        # Get batches
-        while len(y) < self.batch_size:
-            # Get data for the window.
+        # Check if both classes are present
+        if len(class_0_indices) == 0 or len(class_1_indices) == 0:
+            print(f"Batch {index} - Skipping due to missing class")
+            return [], []
+
+        # Oversample the minority class
+        if len(class_1_indices) < len(class_0_indices):
+            class_1_indices = resample(class_1_indices, replace=True, n_samples=len(class_0_indices), random_state=SEED)
+        else:
+            class_0_indices = resample(class_0_indices, replace=True, n_samples=len(class_1_indices), random_state=SEED)
+
+        balanced_indices = np.hstack((class_0_indices, class_1_indices))
+        np.random.shuffle(balanced_indices)
+
+        x, y = [], []
+        for i in balanced_indices[:self.batch_size]:
             X = np.hstack((mfcc[i: i + self.frame_count], delta[i: i + self.frame_count]))
-
-            # Append sequence to list of frames
             x.append(X)
-
-            # Select label from center of sequence as label for that sequence.
-            y_range = labels[i: i + self.frame_count]
-            y.append(int(y_range[int(self.frame_count / 2)]))
-
-            # Increment window using set step size
-            i += self.step_size
+            y.append(labels[i])
 
         # Print batch class distribution for debugging
         print(f"Batch {index} - Class distribution:", np.bincount(y))
@@ -157,7 +170,7 @@ def test_generator(data):
     # Test generator features.
     generator = DataGenerator(data, size_limit=10000)
 
-    generator.setup_generation(frame_count=3, step_size=1, batch_size=2)
+    generator.setup_generation(frame_count=100, step_size=1, batch_size=2)
     generator.set_noise_level_db('-3')
     generator.use_train_data()
 
@@ -171,8 +184,11 @@ def test_generator(data):
         X, y = generator.get_batch(i)
         print(f'Batch {i} - Class distribution: {np.bincount(y)}')
 
-    X, y = generator.get_batch(0)
-    print(f'Load a few frames into memory:\n{X[0]}\n\nCorresponding label: {y[0]}')
+        # Check if batch is not empty before accessing elements
+        if X and y:
+            print(f'Load a few frames into memory:\n{X[0]}\n\nCorresponding label: {y[0]}')
+        else:
+            print(f'Batch {i} is empty.')
 
     # generator.plot_data(0, 1000)
 
