@@ -53,15 +53,17 @@ class DataGenerator:
         self.step_size = step_size
         self.batch_size = batch_size
 
-        # Setup indexes and sizes for data splits.
+        # Calculate indexes for data splits
         self.train_index = 0
-        self.val_index = int((1.0 - val_part - test_part) * self.size)
-        self.test_index = int((1.0 - test_part) * self.size)
+        self.val_index = int(self.size * (1 - val_part - test_part))
+        self.test_index = int(self.size * (1 - test_part))
 
+        # Calculate sizes for each data split
         self.train_size = self.val_index
         self.val_size = self.test_index - self.val_index
         self.test_size = self.size - self.test_index
-
+        assert self.size == self.train_size + self.val_size + self.test_size
+        
         # Print data split sizes for debugging
         print(f"Train size: {self.train_size}, Validation size: {self.val_size}, Test size: {self.test_size}")
 
@@ -113,7 +115,7 @@ class DataGenerator:
             print(f'Class distribution in loaded data: {np.bincount(labels)}')
             return frames, None, None, labels
         
-    def get_batch(self, index):
+    def get_batch(self, index, skip_single_class=False):
         # Get a batch of data based on the current index
 
         # Get current position.
@@ -128,7 +130,7 @@ class DataGenerator:
         class_1_indices = np.where(labels == 1)[0]
 
         # Check if both classes are present
-        if len(class_0_indices) == 0 or len(class_1_indices) == 0:
+        if skip_single_class and (len(class_0_indices) == 0 or len(class_1_indices) == 0):
             print(f"Batch {index} - Skipping due to missing class")
             return [], []
 
@@ -144,10 +146,19 @@ class DataGenerator:
         np.random.shuffle(balanced_indices)
 
         x, y = [], []
+        inconsistent_slices = 0
         for i in balanced_indices:
-            X = np.hstack((mfcc[i: i + self.frame_count], delta[i: i + self.frame_count]))
-            x.append(X)
-            y.append(labels[i])
+            # Ensure the slicing is correct and results in consistent shapes
+            mfcc_slice = mfcc[i: i + self.frame_count]
+            delta_slice = delta[i: i + self.frame_count]
+            if mfcc_slice.shape[0] == self.frame_count and delta_slice.shape[0] == self.frame_count:
+                X = np.hstack((mfcc_slice, delta_slice))
+                x.append(X)
+                y.append(labels[i])
+            else:
+                # print(f"Skipping index {i} due to inconsistent slice shapes")
+                inconsistent_slices += 1
+        print(f"Batch {index} - Skipped {inconsistent_slices} inconsistent slices out of {len(balanced_indices)}")
 
         # Convert to numpy array and add debug print to verify the shape
         x = np.array(x)
