@@ -93,6 +93,9 @@ class DataGenerator:
         self.data_mode = 2
 
     def get_data(self, index_from, index_to):
+        # plot_labels(self.data, index_from, index_to)
+        assert(index_from >= 0 and index_to <= self.size)
+
         # Retrieve data between specified indexes
         try:
             frames = self.data['frames-' + self.noise_level][index_from: index_to]
@@ -117,7 +120,7 @@ class DataGenerator:
         pos = self.initial_pos + (self.batch_size * index) * self.step_size
 
         # Further increase the size of data slices
-        l = self.frame_count + self.step_size * self.batch_size * 100
+        l = self.frame_count + self.step_size * self.batch_size
         frames, mfcc, delta, labels = self.get_data(pos, pos + l)
 
         # Stratified sampling to ensure balanced batches
@@ -130,13 +133,13 @@ class DataGenerator:
             return [], []
 
         # Determine the number of samples to take from each class
-        num_samples_per_class = min(len(class_0_indices), len(class_1_indices), self.batch_size // 2)
+        num_samples_per_class = self.batch_size // 2
 
         # Sample from each class
-        sampled_class_0_indices = np.random.choice(class_0_indices, num_samples_per_class, replace=False)
-        sampled_class_1_indices = np.random.choice(class_1_indices, num_samples_per_class, replace=False)
+        sampled_class_0_indices = np.random.choice(class_0_indices, num_samples_per_class, replace=True)
+        sampled_class_1_indices = np.random.choice(class_1_indices, num_samples_per_class, replace=True)
 
-        # Combine and shuffle the sampled indices
+        # Combine the sampled indices
         balanced_indices = np.hstack((sampled_class_0_indices, sampled_class_1_indices))
         np.random.shuffle(balanced_indices)
 
@@ -145,6 +148,11 @@ class DataGenerator:
             X = np.hstack((mfcc[i: i + self.frame_count], delta[i: i + self.frame_count]))
             x.append(X)
             y.append(labels[i])
+
+        # Convert to numpy array and add debug print to verify the shape
+        x = np.array(x)
+        y = np.array(y)
+        print(f"Batch {index} - Data shape: {x.shape}, Labels shape: {y.shape}")
 
         # Print batch class distribution for debugging
         print(f"Batch {index} - Class distribution:", np.bincount(y))
@@ -188,7 +196,7 @@ def test_generator(data):
         print(f'Batch {i} - Class distribution: {np.bincount(y)}')
 
         # Check if batch is not empty before accessing elements
-        if X and y:
+        if X.size > 0 and y.size > 0:
             print(f'Load a few frames into memory:\n{X[0][:5]}\n\nCorresponding label: {y[0]}')
         else:
             print(f'Batch {i} is empty.')
@@ -225,8 +233,5 @@ def webrtc_vad_accuracy(data, sensitivity, noise_level):
 if __name__ == '__main__':
     
     strong_dataset = STRONGFileManager('processed_strong_data')
-
-    # if 'frames' not in strong_dataset.data.keys():
-    #     raise Exception('Strong dataset file does not contain any frames!')
     
     test_generator(strong_dataset.data)
