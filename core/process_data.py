@@ -188,17 +188,17 @@ def process_test_data(dataset):
         # Get the length of the speech data frames
         l = len(dataset.data['frames'])
 
+        # Split speech data randomly within the given slice length
         pos = 0
         slices = []
-
-        # Split speech data randomly within the given slice length
         while pos + SLICE_MIN < l:
             slice_indexing = (pos, pos + SLICE_MAX)
             slices.append(slice_indexing)
             pos = slice_indexing[1]
 
         # Get total frame count
-        total = l + pos + MFCC_WINDOW_FRAME_SIZE
+        total = dataset.data['frames'].shape[0]
+        # total = l + pos + MFCC_WINDOW_FRAME_SIZE
 
         # Create datasets for frames, MFCC, and delta MFCC for each noise level
         for key in NOISE_LEVELS_DB:
@@ -214,9 +214,10 @@ def process_test_data(dataset):
 
         # Process each slice of speech data
         for s in slices:
+            if not  (np.array(s) < len(dataset.data['labels'])).all():
+                # this will skip the last slice if it is not a full slice
+                continue
 
-            assert (np.array(s) < len(dataset.data['labels'])).all()
-            
             frames = dataset.data['frames'][s[0]: s[1]]
             labels = dataset.data['labels'][s[0]: s[1]]
 
