@@ -47,6 +47,15 @@ class Net(nn.Module):
         if OBJ_CUDA:
             self.rnn.flatten_parameters()
 
+        # Ensure input is 3D: (batch_size, sequence_length, input_size)
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
+        elif x.dim() == 1:
+            x = x.unsqueeze(0).unsqueeze(0)
+
+        # Debug print to verify the shape of the input data
+        print(f"Input shape before LSTM: {x.shape}")
+
         # (batch, frames, features)
         if hasattr(self, 'lstm') and self.lstm:
             if x.device.type != self.hidden[0].device.type:
@@ -54,7 +63,6 @@ class Net(nn.Module):
                 x, _ = self.rnn(x, hidden)
             else:
                 x, _ = self.rnn(x, self.hidden)
-
         else:
             x, _ = self.rnn(x)
 
@@ -130,6 +138,10 @@ class BiRNN(nn.Module):
     def forward(self, x):
         if OBJ_CUDA:
             self.rnn.flatten_parameters()
+
+        # Ensure input is 3D: (batch_size, sequence_length, input_size)
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
 
         x = x.permute(0, 2, 1)
 
