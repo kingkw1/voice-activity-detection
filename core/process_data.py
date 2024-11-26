@@ -37,6 +37,7 @@ from os import path
 # Add the parent directory to the PYTHONPATH
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_RATE, NOISE_LEVELS_DB, SAMPLE_WIDTH, SAMPLE_CHANNELS
+from core.prepare_strong_files import STRONGFileManager
 
 # Random seed for reproducibility.
 SEED = 1337
@@ -304,3 +305,9 @@ def add_noise(speech_frames, noise_frames, align_frames, noise_level_db):
     delta = python_speech_features.delta(mfcc, 2)
 
     return frames, mfcc, delta
+
+
+if __name__ == '__main__':
+    
+    strong_dataset = STRONGFileManager('processed_strong_data')
+    process_test_data(strong_dataset)
