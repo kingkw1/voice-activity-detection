@@ -47,7 +47,7 @@ from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import num_params, accuracy, BATCH_SIZE, FRAMES, FEATURES, OBJ_CUDA, NOISE_LEVELS_DB
 from core.generator import DataGenerator
-from core.models import Net, NickNet, DenseNet
+from core.models import Net, MODEL_STACK
 from core.prepare_strong_files import prepare_strong_files
 from core.process_data import process_test_data
 from core.visualization import Vis
@@ -57,58 +57,7 @@ OBJ_TRAIN_MODELS = True
 NOISE_LEVELS = list(NOISE_LEVELS_DB.keys())
 STEP_SIZE = 6
 MAX_EPOCHS = 14
-
-
-MODEL_STACK = {
-    'net': {
-        'desc': "LSTM, small, γ = 0",
-        'model': Net(large=False),
-        'kwargs': {
-            'gamma': 0
-        }
-    },
-    # 'net_large': {
-    #     'desc': "LSTM, large, γ = 2",
-    #     'model': Net(),
-    #     'kwargs': {
-    #         'gamma': 2
-    #     }
-    # },
-    # 'gru': {
-    #     'desc': "Conv + GRU, small, γ = 2",
-    #     'model': NickNet(large=False),
-    #     'kwargs': {
-    #         'gamma': 2
-    #     }
-    # },
-    # 'gru_large': {
-    #     'desc': "Conv + GRU, large, γ = 2",
-    #     'model': NickNet(),
-    #     'kwargs': {
-    #         'gamma': 2
-    #     }
-    # },
-    # 'densenet': {
-    #     'desc': "DenseNet, small, γ = 2",
-    #     'model': DenseNet(large=False),
-    #     'kwargs': {
-    #         'use_adam': False,
-    #         'lr': 1,
-    #         'momentum': 0.7,
-    #         'gamma': 2
-    #     }
-    # },
-    # 'densenet_large': {
-    #     'desc': "DenseNet, large, γ = 2",
-    #     'model': DenseNet(large=True),
-    #     'kwargs': {
-    #         'use_adam': False,
-    #         'lr': 1,
-    #         'momentum': 0.7,
-    #         'gamma': 2
-    #     }
-    # }
-}
+SEED = 1337
 
 
 def test_network(data):
@@ -292,6 +241,7 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
             plt.plot(e, val_losses, label='Loss (Validation)', color='b')
 
         plt.legend()
+        plt.title('Loss')
         plt.subplot(1, 2, 2)
         plt.plot(e, accs, label='Accuracy (Training)', color='r')
 
@@ -299,6 +249,8 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
             plt.plot(e, val_accs, label='Accuracy (Validation)', color='b')
 
         plt.legend()
+        plt.title('Accuracy')
+        plt.suptitle(f'Training progress of {title}')
         # plt.show()
         plt.draw()
         plt.pause(0.001)
@@ -365,7 +317,9 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
             # For each batch in noise level
             for i in range(batches):
                 # Get a new batch and run it
-                X, y = generator.get_batch(i)
+                X, y = generator.get_batch(i, skip_single_class=True)
+                if len(X)==0 or len(y)==0:
+                    continue
                 temp_loss, temp_acc = run_batch(X, y, epoch_loss, epoch_acc)
                 epoch_loss += temp_loss / float(num_batches)
                 level_acc.append(np.mean(temp_acc))
@@ -421,9 +375,14 @@ def train_net(net, data, size_limit=0, noise_level='None', epochs=15, lr=1e-3, u
                 print(f'\nEpoch wall-time: {dur} min')
 
             plot(losses, accs, val_losses, val_accs)
+        
+    # Save the figure
+    fig = plt.gcf()
+    fig.savefig(os.path.join(os.getcwd(), 'models', f'{title}_training_plot.png'))
+    plt.close(fig)
 
 
-def set_seed(seed = 1337):
+def set_seed(seed = SEED):
     np.random.seed(seed)
     torch.manual_seed(seed)
 
@@ -456,6 +415,11 @@ def test_predict(net, data, size_limit, noise_level):
 
     for i in range(generator.batch_count):
         X, y = generator.get_batch(i)
+
+        # Check if batch is not empty before accessing elements
+        if len(X) == 0 or len(y) == 0:
+            continue
+
         print(f"Batch {i} - Class distribution:", np.bincount(y))
         X = Variable(torch.from_numpy(np.array(X)).float())
         y = Variable(torch.from_numpy(np.array(y))).long()
