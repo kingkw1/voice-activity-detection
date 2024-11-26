@@ -1,4 +1,6 @@
 # Name of folder to save the data files in.
+import numpy as np
+from matplotlib import pyplot as plt
 import torch
 
 DATA_FOLDER = "/home/kevin/Documents/voice-activity-detection/data"
@@ -76,3 +78,21 @@ def create_dictionary(list1, list2):
                 dictionary[file2] = file1
                 break
     return dictionary
+
+
+def plot_labels(data, index_from=None, index_to=None):
+    temp_labels = np.array(data['labels'])
+
+    plt.figure(figsize=(12, 8))
+    plt.plot(range(len(temp_labels)), temp_labels, label='All Labels')
+
+    # Ensure index_from and index_to are within the bounds of temp_labels
+    if index_from is not None and index_to is not None:
+        index_from = max(0, min(index_from, len(temp_labels) - 1))
+        index_to = max(index_from, min(index_to, len(temp_labels)))
+        plt.plot(range(index_from, index_to), temp_labels[index_from:index_to], 'r', label='Selected Labels')
+
+    plt.xlim(0, len(temp_labels))
+    plt.legend()
+    plt.savefig('labels.png')
+    plt.close()
