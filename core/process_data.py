@@ -37,6 +37,7 @@ from os import path
 # Add the parent directory to the PYTHONPATH
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_RATE, NOISE_LEVELS_DB, SAMPLE_WIDTH, SAMPLE_CHANNELS
+from core.prepare_strong_files import STRONGFileManager
 
 # Random seed for reproducibility.
 SEED = 1337
@@ -175,11 +176,11 @@ def process_test_data(dataset):
     :param dataset: The speech data set.
     :return: The processed data set.
     """
-    # Open or create an HDF5 file to store the processed data
-    data = h5py_cache.File(DATA_FOLDER + '/processed_strong_data.hdf5', 'a', CHUNK_CACHE_MEM_SIZE)
-
     # Set the random seed for reproducibility
     np.random.seed(SEED)
+
+    # Open or create an HDF5 file to store the processed data
+    data = h5py_cache.File(DATA_FOLDER + '/processed_strong_data.hdf5', 'a', CHUNK_CACHE_MEM_SIZE)
 
     # Check if labels already exist in the dataset
     if 'labels' not in data:
@@ -213,6 +214,9 @@ def process_test_data(dataset):
 
         # Process each slice of speech data
         for s in slices:
+
+            assert (np.array(s) < len(dataset.data['labels'])).all()
+            
             frames = dataset.data['frames'][s[0]: s[1]]
             labels = dataset.data['labels'][s[0]: s[1]]
 
@@ -304,3 +308,9 @@ def add_noise(speech_frames, noise_frames, align_frames, noise_level_db):
     delta = python_speech_features.delta(mfcc, 2)
 
     return frames, mfcc, delta
+
+
+if __name__ == '__main__':
+    
+    strong_dataset = STRONGFileManager('strong')
+    process_test_data(strong_dataset)
