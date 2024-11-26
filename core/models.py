@@ -20,7 +20,6 @@ class Net(nn.Module):
         self.relu = nn.ReLU()
 
         if lstm:
-            self.hidden = self.init_hidden()
             self.rnn = LSTM(input_size=FEATURES, hidden_size=FRAMES, num_layers=1, batch_first=True)
         else:
             self.rnn = GRU(input_size=FEATURES, hidden_size=FRAMES, num_layers=1, batch_first=True)
@@ -33,9 +32,9 @@ class Net(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-    def init_hidden(self):
-        h = Variable(torch.zeros(1, BATCH_SIZE, FRAMES))
-        c = Variable(torch.zeros(1, BATCH_SIZE, FRAMES))
+    def init_hidden(self, batch_size):
+        h = Variable(torch.zeros(1, batch_size, FRAMES))
+        c = Variable(torch.zeros(1, batch_size, FRAMES))
 
         if OBJ_CUDA:
             h = h.cuda()
@@ -56,13 +55,12 @@ class Net(nn.Module):
         # Debug print to verify the shape of the input data
         print(f"Input shape before LSTM: {x.shape}")
 
+        # Initialize hidden state with the correct batch size
+        hidden = self.init_hidden(x.size(0))
+
         # (batch, frames, features)
         if hasattr(self, 'lstm') and self.lstm:
-            if x.device.type != self.hidden[0].device.type:
-                hidden = [tensor.to("cpu") for tensor in self.hidden]
-                x, _ = self.rnn(x, hidden)
-            else:
-                x, _ = self.rnn(x, self.hidden)
+            x, _ = self.rnn(x, hidden)
         else:
             x, _ = self.rnn(x)
 
@@ -440,3 +438,56 @@ class DenseNet(nn.Module):
         x = x.view(BATCH_SIZE, -1)
 
         return F.softmax(self.out(x), dim=1)
+
+
+
+MODEL_STACK = {
+    'net': {
+        'desc': "LSTM, small, γ = 0",
+        'model': Net(large=False),
+        'kwargs': {
+            'gamma': 0
+        }
+    },
+    # 'net_large': {
+    #     'desc': "LSTM, large, γ = 2",
+    #     'model': Net(),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'gru': {
+    #     'desc': "Conv + GRU, small, γ = 2",
+    #     'model': NickNet(large=False),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'gru_large': {
+    #     'desc': "Conv + GRU, large, γ = 2",
+    #     'model': NickNet(),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'densenet': {
+    #     'desc': "DenseNet, small, γ = 2",
+    #     'model': DenseNet(large=False),
+    #     'kwargs': {
+    #         'use_adam': False,
+    #         'lr': 1,
+    #         'momentum': 0.7,
+    #         'gamma': 2
+    #     }
+    # },
+    # 'densenet_large': {
+    #     'desc': "DenseNet, large, γ = 2",
+    #     'model': DenseNet(large=True),
+    #     'kwargs': {
+    #         'use_adam': False,
+    #         'lr': 1,
+    #         'momentum': 0.7,
+    #         'gamma': 2
+    #     }
+    # }
+}
