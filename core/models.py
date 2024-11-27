@@ -83,8 +83,8 @@ class Net(nn.Module):
             x = self.lin(x)
 
         return self.softmax(x)
-
-
+    
+    
 class BiRNN(nn.Module):
     '''
     Bi-directional layer of gated recurrent units.
@@ -159,11 +159,19 @@ class BiRNN(nn.Module):
 
         # Extract outputs from forward and backward sequence and concatenate
         # If not bidirectional, only use last output from forward sequence
-        x = self.hidden.view(self.batch_size, -1)
+        x = x.contiguous().view(x.size(0), -1)
+
+        # Debug print to verify the shape of x
+        print(f"Shape of x after view: {x.shape}")
+
+        # Ensure the reshaped tensor has the correct shape
+        expected_embed_input_size = self.embed[0].in_features if isinstance(self.embed, nn.Sequential) else self.embed.in_features
+        if x.size(1) != expected_embed_input_size:
+            raise RuntimeError(f"Expected input size {expected_embed_input_size}, but got {x.size(1)}")
 
         # (batch, features)
         return self.embed(x)
-
+    
 
 class GatedConv(nn.Module):
     '''
@@ -458,45 +466,45 @@ MODEL_STACK = {
             'gamma': 0
         }
     },
-    # 'net_large': {
-    #     'desc': "LSTM, large, γ = 2",
-    #     'model': Net(),
-    #     'kwargs': {
-    #         'gamma': 2
-    #     }
-    # },
-    # 'gru': {
-    #     'desc': "Conv + GRU, small, γ = 2",
-    #     'model': NickNet(large=False),
-    #     'kwargs': {
-    #         'gamma': 2
-    #     }
-    # },
-    # 'gru_large': {
-    #     'desc': "Conv + GRU, large, γ = 2",
-    #     'model': NickNet(),
-    #     'kwargs': {
-    #         'gamma': 2
-    #     }
-    # },
-    # 'densenet': {
-    #     'desc': "DenseNet, small, γ = 2",
-    #     'model': DenseNet(large=False),
-    #     'kwargs': {
-    #         'use_adam': False,
-    #         'lr': 1,
-    #         'momentum': 0.7,
-    #         'gamma': 2
-    #     }
-    # },
-    # 'densenet_large': {
-    #     'desc': "DenseNet, large, γ = 2",
-    #     'model': DenseNet(large=True),
-    #     'kwargs': {
-    #         'use_adam': False,
-    #         'lr': 1,
-    #         'momentum': 0.7,
-    #         'gamma': 2
-    #     }
-    # }
+    'net_large': {
+        'desc': "LSTM, large, γ = 2",
+        'model': Net(),
+        'kwargs': {
+            'gamma': 2
+        }
+    },
+    'gru': {
+        'desc': "Conv + GRU, small, γ = 2",
+        'model': NickNet(large=False),
+        'kwargs': {
+            'gamma': 2
+        }
+    },
+    'gru_large': {
+        'desc': "Conv + GRU, large, γ = 2",
+        'model': NickNet(),
+        'kwargs': {
+            'gamma': 2
+        }
+    },
+    'densenet': {
+        'desc': "DenseNet, small, γ = 2",
+        'model': DenseNet(large=False),
+        'kwargs': {
+            'use_adam': False,
+            'lr': 1,
+            'momentum': 0.7,
+            'gamma': 2
+        }
+    },
+    'densenet_large': {
+        'desc': "DenseNet, large, γ = 2",
+        'model': DenseNet(large=True),
+        'kwargs': {
+            'use_adam': False,
+            'lr': 1,
+            'momentum': 0.7,
+            'gamma': 2
+        }
+    }
 }
