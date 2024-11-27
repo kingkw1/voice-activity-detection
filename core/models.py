@@ -24,11 +24,9 @@ class Net(nn.Module):
         else:
             self.rnn = GRU(input_size=FEATURES, hidden_size=FRAMES, num_layers=1, batch_first=True)
 
-        if large:
-            self.lin1 = nn.Linear(FRAMES ** 2, 26)
-            self.lin2 = nn.Linear(26, 2)
-        else:
-            self.lin = nn.Linear(FRAMES ** 2, 2)
+        self.lin1 = nn.Linear(FRAMES ** 2, 26)
+        self.lin2 = nn.Linear(26, 2)
+        self.lin = nn.Linear(FRAMES ** 2, 2)
 
         self.softmax = nn.Softmax(dim=1)
 
@@ -52,19 +50,30 @@ class Net(nn.Module):
         elif x.dim() == 1:
             x = x.unsqueeze(0).unsqueeze(0)
 
-        # Debug print to verify the shape of the input data
-        print(f"Input shape before LSTM: {x.shape}")
+        # Move input tensor to the same device as the RNN parameters
+        if OBJ_CUDA:
+            x = x.cuda()
+            self.rnn = self.rnn.cuda()
 
         # Initialize hidden state with the correct batch size
-        hidden = self.init_hidden(x.size(0))
+        batch_size = x.size(0)
+        hidden = self.init_hidden(batch_size)
 
         # (batch, frames, features)
         if hasattr(self, 'lstm') and self.lstm:
+            if x.device != hidden[0].device:
+                hidden = [tensor.to(x.device) for tensor in hidden]
             x, _ = self.rnn(x, hidden)
         else:
             x, _ = self.rnn(x)
 
         x = x.contiguous().view(-1, FRAMES ** 2)
+
+        # Move linear layer parameters to the same device as x
+        if OBJ_CUDA:
+            self.lin1 = self.lin1.cuda()
+            self.lin2 = self.lin2.cuda()
+            self.lin = self.lin.cuda()
 
         # (batch, units)
         if self.large:

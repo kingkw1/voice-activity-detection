@@ -80,14 +80,18 @@ def test_network(data):
     for i in range(3):
         # Get batch
         X, y = generator.get_batch(i)
-        X = torch.from_numpy(np.array(X)).float().cpu()
-        y = torch.from_numpy(np.array(y)).cpu()
+        X = torch.from_numpy(np.array(X)).float()
+        y = torch.from_numpy(np.array(y)).long()
+
+        if OBJ_CUDA:
+            X = X.cuda()
+            y = y.cuda()
 
         # Run through network
         out = net(X)
-        acc = accuracy(out, y).data.numpy()
+        acc = accuracy(out, y).data.cpu().numpy()
 
-    print('Successfully ran the network!\n\nExample output:', out.data.numpy()[0])
+    print('Successfully ran the network!\n\nExample output:', out.data.cpu().numpy()[0])
 
 
 def initialize_network():
@@ -453,7 +457,7 @@ def roc_auc(nets, data, noise_lvl, size_limit=0):
     fig, ax = plt.subplots(1, 1, figsize=(16, 10))
     plt.title('Receiver Operating Characteristic (%s)' % noise_lvl, fontsize=16)
 
-    # For each noise level
+    # For each network
     for key in nets:
         net = nets[key]
 

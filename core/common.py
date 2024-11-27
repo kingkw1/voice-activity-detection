@@ -39,6 +39,8 @@ def accuracy(out, y):
     Calculate accuracy of model where
     out.shape = (64, 2) and y.shape = (64)
     '''
+    if OBJ_CUDA:
+        y = y.cuda()
     out = torch.max(out, 1)[1].float()
     eq = torch.eq(out, y.float()).float()
     return torch.mean(eq)
