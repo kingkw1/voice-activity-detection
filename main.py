@@ -1,23 +1,18 @@
 from matplotlib import pyplot as plt
 from core.generator import test_generator, webrtc_vad_accuracy
-from core.prepare_files import prepare_files, prepare_strong_files
 from core.process_data import process_training_data, process_test_data
 from core.train import test_network, initialize_network, set_seed, train_all_models, get_model, netvad
 from core.models import Net, NickNet, DenseNet
+from core.prepare_strong_files import prepare_strong_files
+from core.prepare_files import prepare_files
 
 
 def main():
-    # Prepare the audio files
-    speech_dataset, noise_dataset = prepare_files()
-
-    # Prepare my labeled files
-    strong_video_audio_dataset, _ = prepare_strong_files()
-
     # Set up data for use in neural networks
+    speech_dataset, noise_dataset = prepare_files()
     data = process_training_data(speech_dataset, noise_dataset)
-    strong_data = process_test_data(strong_video_audio_dataset)
 
-    # Define data generator
+    # Define data generator 
     test_generator(data)
 
     initialize_network()
@@ -25,8 +20,7 @@ def main():
 
     # Train all data
     train_all_models(data)
-    # train_all_models(strong_video_audio_dataset.data)
-    # plt.show()
+    plt.show()
 
     # Initialize the model & Load/Train it
     model = NickNet()
@@ -35,8 +29,7 @@ def main():
 
     # Evaluate model with sample data
     netvad(model, data, title='Training Data')
-
-    netvad(model, strong_data, init_pos=400, title='STRONG Data')
+    # netvad(model, strong_data, init_pos=400, title='STRONG Data')
 
     print('Accuracy (sensitivity 0, no noise):', webrtc_vad_accuracy(data, 0, 'None'))
     print('Accuracy (sensitivity 0, -15 dB noise level):', webrtc_vad_accuracy(data, 0, '-15'))
