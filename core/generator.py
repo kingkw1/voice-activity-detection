@@ -158,15 +158,13 @@ class DataGenerator:
             else:
                 # print(f"Skipping index {i} due to inconsistent slice shapes")
                 inconsistent_slices += 1
+
         print(f"Batch {index} - Skipped {inconsistent_slices} inconsistent slices out of {len(balanced_indices)}")
 
         # Convert to numpy array and add debug print to verify the shape
         x = np.array(x)
         y = np.array(y)
         print(f"Batch {index} - Data shape: {x.shape}, Labels shape: {y.shape}")
-
-        # Print batch class distribution for debugging
-        print(f"Batch {index} - Class distribution:", np.bincount(y))
 
         return x, y
 
@@ -204,7 +202,8 @@ def test_generator(data):
 
     for i in range(3):
         X, y = generator.get_batch(i)
-        print(f'Batch {i} - Class distribution: {np.bincount(y)}')
+        if X.size > 0 and y.size > 0:
+            print(f'Batch {i} - Class distribution: {np.bincount(y)}')
 
         # Check if batch is not empty before accessing elements
         if X.size > 0 and y.size > 0:
