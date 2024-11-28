@@ -2,11 +2,7 @@ import torch
 from torch import nn as nn
 from torch.autograd import Variable
 from torch.nn import LSTM, GRU, functional as F
-import sys
-from os import path
 
-# Add the parent directory to the PYTHONPATH
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import BATCH_SIZE, FRAMES, FEATURES, OBJ_CUDA
 
 

@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
         "${workspaceFolder}/core"
-    ]
+    ],
+    "python.envFile": "${workspaceFolder}/.env"
 }

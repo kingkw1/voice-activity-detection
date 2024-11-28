@@ -1,15 +1,11 @@
 from os import path, listdir
-import sys
 import h5py
 import numpy as np
 import webrtcvad
 from pydub import AudioSegment
-import os
 from matplotlib import pyplot as plt
 
-# Add the parent directory to the PYTHONPATH
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, NOISE_FOLDER, SPEECH_FOLDER, \
+from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, \
     STRONG_PROCESSED_MIC_FOLDER, STRONG_VIDEO_AUDIO_FOLDER, create_dictionary
 
 OBJ_PREPARE_AUDIO = True
