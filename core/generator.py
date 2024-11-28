@@ -1,10 +1,8 @@
 import array
 import numpy as np
-import webrtcvad
 from pydub import AudioSegment
 import sys
 from os import path
-from sklearn.utils import resample
 
 # Add the parent directory to the PYTHONPATH
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -65,7 +63,7 @@ class DataGenerator:
         assert self.size == self.train_size + self.val_size + self.test_size
         
         # Print data split sizes for debugging
-        print(f"Train size: {self.train_size}, Validation size: {self.val_size}, Test size: {self.test_size}")
+        # print(f"Train size: {self.train_size}, Validation size: {self.val_size}, Test size: {self.test_size}")
 
     def use_train_data(self):
         # Switch to training data mode
@@ -105,14 +103,14 @@ class DataGenerator:
             delta = self.data['delta-' + self.noise_level][index_from: index_to]
             labels = self.data['labels'][index_from: index_to]
 
-            print(f'Loaded data from {index_from} to {index_to} for noise level {self.noise_level}')
-            print(f'Class distribution in loaded data: {np.bincount(labels)}')
+            # print(f'Loaded data from {index_from} to {index_to} for noise level {self.noise_level}')
+            # print(f'Class distribution in loaded data: {np.bincount(labels)}')
             return frames, mfcc, delta, labels
         except KeyError:
             frames = self.data['frames'][index_from: index_to]
             labels = self.data['labels'][index_from: index_to]
-            print(f'Loaded data from {index_from} to {index_to} without noise level')
-            print(f'Class distribution in loaded data: {np.bincount(labels)}')
+            # print(f'Loaded data from {index_from} to {index_to} without noise level')
+            # print(f'Class distribution in loaded data: {np.bincount(labels)}')
             return frames, None, None, labels
         
     def get_batch(self, index, skip_single_class=False):
@@ -212,32 +210,6 @@ def test_generator(data):
             print(f'Batch {i} is empty.')
 
     # generator.plot_data(0, 1000)
-
-
-def webrtc_vad_accuracy(data, sensitivity, noise_level):
-    # Calculate the accuracy of WebRTC VAD
-
-    vad = webrtcvad.Vad(sensitivity)
-    generator = DataGenerator(data, size_limit=0)
-
-    # Not needed but must be set.
-    generator.setup_generation(frame_count=1, step_size=1, batch_size=1)
-
-    # Setup noise level and test data.
-    generator.set_noise_level_db(noise_level)
-    generator.use_test_data()
-
-    correct = 0
-    batch_size = 1000
-
-    for pos in range(0, generator.size, batch_size):
-        frames, _, _, labels = generator.get_data(pos, pos + batch_size)
-
-        for i, frame in enumerate(frames):
-            if vad.is_speech(frame.tobytes(), sample_rate=SAMPLE_RATE) == labels[i]:
-                correct += 1
-
-    return (correct / generator.size)
 
 
 if __name__ == '__main__':
