@@ -38,6 +38,7 @@ from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from core.common import DATA_FOLDER, SAMPLE_RATE, NOISE_LEVELS_DB, SAMPLE_WIDTH, SAMPLE_CHANNELS
 from core.prepare_strong_files import STRONGFileManager
+from core.prepare_strong_files import STRONGFileManager
 
 # Random seed for reproducibility.
 SEED = 1337
