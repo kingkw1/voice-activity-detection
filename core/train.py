@@ -631,7 +631,8 @@ def netvad(net, data, noise_level='-3', init_pos=50, length=700, title=None, tim
 
 
 def get_model(data, model, model_name):
-    if OBJ_TRAIN_MODELS:
+    model_path = net_path(MAX_EPOCHS, model_name)
+    if OBJ_TRAIN_MODELS and not os.path.exists(model_path):
         set_seed()
         model_dict = MODEL_STACK[model_name]
         train_net(model, data, title=model_name, **model_dict['kwargs'])

@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 from core.common import DATA_FOLDER, SAMPLE_CHANNELS, SAMPLE_WIDTH, SAMPLE_RATE, \
     STRONG_PROCESSED_MIC_FOLDER, STRONG_VIDEO_AUDIO_FOLDER, create_dictionary
 
+# TODO: May need to add both player's mic audio to the dataset for the labels
+
 OBJ_PREPARE_AUDIO = True
 
 # Frame size to use for the labelling.
