@@ -131,10 +131,10 @@ class BiRNN(nn.Module):
                     nn.Linear(sz, 2)
                 )
 
-    def init_hidden(self):
+    def init_hidden(self, batch_size):
         num_dir = 2 if self.bidir or self.layers > 1 else 1
-        h = Variable(torch.zeros(num_dir, self.batch_size, self.num_hidden))
-        c = Variable(torch.zeros(num_dir, self.batch_size, self.num_hidden))
+        h = Variable(torch.zeros(num_dir, batch_size, self.num_hidden))
+        c = Variable(torch.zeros(num_dir, batch_size, self.num_hidden))
 
         if OBJ_CUDA:
             h = h.cuda()
@@ -149,17 +149,25 @@ class BiRNN(nn.Module):
         # Ensure input is 3D: (batch_size, sequence_length, input_size)
         if x.dim() == 2:
             x = x.unsqueeze(1)
+        elif x.dim() == 1:
+            x = x.unsqueeze(0).unsqueeze(0)
 
         x = x.permute(0, 2, 1)
 
+        # Initialize hidden state with the correct batch size
+        batch_size = x.size(0)
+        hidden = self.init_hidden(batch_size)
+
         if self.lstm:
-            x, self.hidden = self.rnn(x, self.hidden)
+            if x.device != hidden[0].device:
+                hidden = [tensor.to(x.device) for tensor in hidden]
+            x, _ = self.rnn(x, hidden)
         else:
-            x, self.hidden = self.rnn(x)
+            x, _ = self.rnn(x)
 
         # Extract outputs from forward and backward sequence and concatenate
         # If not bidirectional, only use last output from forward sequence
-        x = x.contiguous().view(x.size(0), -1)
+        x = x.contiguous().view(batch_size, -1)
 
         # Debug print to verify the shape of x
         print(f"Shape of x after view: {x.shape}")
@@ -443,16 +451,16 @@ class DenseNet(nn.Module):
             self.out = nn.Linear(42, 2, bias=False)
 
     def forward(self, x):
-
         x = x.permute(0, 2, 1)
-
         x = self.cnn_in(x)
         x = self.dense1(x)
         x = self.trans1(x)
         x = self.dense2(x)
         x = self.cnn_out(x)
 
-        x = x.view(BATCH_SIZE, -1)
+        # Calculate the correct shape for the view operation
+        batch_size = x.size(0)
+        x = x.view(batch_size, -1)
 
         return F.softmax(self.out(x), dim=1)
 
@@ -473,20 +481,20 @@ MODEL_STACK = {
             'gamma': 2
         }
     },
-    'gru': {
-        'desc': "Conv + GRU, small, γ = 2",
-        'model': NickNet(large=False),
-        'kwargs': {
-            'gamma': 2
-        }
-    },
-    'gru_large': {
-        'desc': "Conv + GRU, large, γ = 2",
-        'model': NickNet(),
-        'kwargs': {
-            'gamma': 2
-        }
-    },
+    # 'gru': {
+    #     'desc': "Conv + GRU, small, γ = 2",
+    #     'model': NickNet(large=False),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
+    # 'gru_large': {
+    #     'desc': "Conv + GRU, large, γ = 2",
+    #     'model': NickNet(),
+    #     'kwargs': {
+    #         'gamma': 2
+    #     }
+    # },
     'densenet': {
         'desc': "DenseNet, small, γ = 2",
         'model': DenseNet(large=False),
