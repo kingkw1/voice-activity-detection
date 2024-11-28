@@ -2,12 +2,16 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import torch
+import os
 
-DATA_FOLDER = "/home/kevin/Documents/voice-activity-detection/data"
-NOISE_FOLDER = '/home/kevin/Documents/voice-activity-detection/data/QUT-NOISE'
-SPEECH_FOLDER = '/home/kevin/Documents/voice-activity-detection/data/LibriSpeech'
-STRONG_PROCESSED_MIC_FOLDER = "/home/kevin/Documents/voice-activity-detection/data/my_audio_files/processedMicAudio"
-STRONG_VIDEO_AUDIO_FOLDER = "/home/kevin/Documents/voice-activity-detection/data/my_audio_files/videoAudio"
+# Get the directory of the current script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DATA_FOLDER = os.path.join(BASE_DIR, "../data")
+NOISE_FOLDER = os.path.join(BASE_DIR, '../data/QUT-NOISE')
+SPEECH_FOLDER = os.path.join(BASE_DIR, '../data/LibriSpeech')
+STRONG_PROCESSED_MIC_FOLDER = os.path.join(BASE_DIR, "../data/my_audio_files/processedMicAudio")
+STRONG_VIDEO_AUDIO_FOLDER = os.path.join(BASE_DIR, "../data/my_audio_files/videoAudio")
 
 # Specify the desired WAV-format.
 SAMPLE_RATE = 16000
