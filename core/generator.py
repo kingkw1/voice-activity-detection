@@ -89,7 +89,6 @@ class DataGenerator:
         self.data_mode = 2
 
     def get_data(self, index_from, index_to):
-        # plot_labels(self.data, index_from, index_to)
         assert(index_from >= 0 and index_to <= self.size)
 
         # Retrieve data between specified indexes
@@ -153,13 +152,16 @@ class DataGenerator:
                 # print(f"Skipping index {i} due to inconsistent slice shapes")
                 inconsistent_slices += 1
 
-        print(f"Batch {index} - Skipped {inconsistent_slices} inconsistent slices out of {len(balanced_indices)}")
+        # print(f"Batch {index} - Skipped {inconsistent_slices} inconsistent slices out of {len(balanced_indices)}")
 
         # Convert to numpy array and add debug print to verify the shape
         x = np.array(x)
         y = np.array(y)
-        print(f"Batch {index} - Data shape: {x.shape}, Labels shape: {y.shape}")
+        # print(f"Batch {index} - Data shape: {x.shape}, Labels shape: {y.shape}")
 
+        # Plot the batch
+        # plot_audio_and_labels(self.data, pos, pos + l)
+        
         return x, y
 
     def plot_data(self, index_from, index_to, show_track=False):

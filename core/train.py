@@ -420,7 +420,7 @@ def test_predict(net, data, size_limit, noise_level):
         if len(X) == 0 or len(y) == 0:
             continue
 
-        print(f"Batch {i} - Class distribution:", np.bincount(y))
+        # print(f"Batch {i} - Class distribution:", np.bincount(y))
         X = Variable(torch.from_numpy(np.array(X)).float())
         y = Variable(torch.from_numpy(np.array(y))).long()
 
