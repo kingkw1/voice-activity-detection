@@ -8,13 +8,12 @@ from tqdm import tqdm
 from core.common import SAMPLE_RATE
 from core.prepare_strong_files import STRONGFileManager, FRAME_SIZE_MS
 
-
 # Parameters
 FPS = 30  # Frames per second
 WINDOW_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
 
 
-def main(file_index=0):  
+def main(file_index=0, start_time=0, end_time=None):
     # Load data from STRONGFileManager
     strong_dataset = STRONGFileManager('strong')
     sample_rate = SAMPLE_RATE
@@ -23,14 +22,32 @@ def main(file_index=0):
     labels = strong_dataset.data['labels']
     frame_times = strong_dataset.data['frame_times']
 
-    # Derive the duration from the audio length
-    total_samples = len(video_data)
-    DURATION = total_samples / sample_rate  # Audio duration in seconds
+    # Total duration of the audio in seconds
+    total_duration = len(video_data) / sample_rate
+
+    # Validate and adjust start and stop times
+    if end_time is None:
+        end_time = total_duration
+    if start_time < 0 or end_time > total_duration or start_time >= end_time:
+        raise ValueError("Invalid start_time or end_time values.")
+
+    # Calculate start and stop samples
+    start_sample = int(start_time * sample_rate)
+    end_sample = int(end_time * sample_rate)
+
+    # Subset the data based on start and stop times
+    video_data = video_data[start_sample:end_sample]
+    mic_data = mic_data[start_sample:end_sample]
+    labels = labels[start_sample // WINDOW_SIZE:end_sample // WINDOW_SIZE]
+    frame_times = frame_times[start_sample // WINDOW_SIZE:end_sample // WINDOW_SIZE]
+
+    # Derive the duration for the snippet
+    snippet_duration = (end_sample - start_sample) / sample_rate
     samples_per_frame = int(sample_rate / FPS)  # Samples per video frame
-    n_frames = frames = int(FPS * DURATION)  # Total number of frames
+    n_frames = int(FPS * snippet_duration)  # Total number of frames
 
     # Save audio to a .wav file
-    audio_output_file = "audio_output.wav"
+    audio_output_file = "audio_snippet.wav"
     audio_combined = (video_data + mic_data) / 2  # Combine audio tracks (optional)
     write(audio_output_file, sample_rate, audio_combined.astype(np.int16))
 
@@ -60,14 +77,14 @@ def main(file_index=0):
 
     # Update function for animation
     def update(frame):
-        start_sample = frame * samples_per_frame
-        end_sample = start_sample + samples_per_frame
+        current_start = frame * samples_per_frame
+        current_end = current_start + samples_per_frame
 
-        video_segment = video_data[start_sample:end_sample]
-        mic_segment = mic_data[start_sample:end_sample]
-        label_segment = labels[start_sample // WINDOW_SIZE:end_sample // WINDOW_SIZE]
-        time_audio = np.arange(start_sample, end_sample) / sample_rate
-        time_labels = frame_times[start_sample // WINDOW_SIZE:end_sample // WINDOW_SIZE]
+        video_segment = video_data[current_start:current_end]
+        mic_segment = mic_data[current_start:current_end]
+        label_segment = labels[current_start // WINDOW_SIZE:current_end // WINDOW_SIZE]
+        time_audio = np.arange(current_start, current_end) / sample_rate + start_time
+        time_labels = frame_times[current_start // WINDOW_SIZE:current_end // WINDOW_SIZE]
 
         video_line.set_data(time_audio, video_segment)
         mic_line.set_data(time_audio, mic_segment)
@@ -84,22 +101,16 @@ def main(file_index=0):
 
     try:
         # Generate animation
-        frames = int(FPS * DURATION)
-        ani = FuncAnimation(fig, update, frames=frames, blit=False)
-
-        # Debugging: Reduce DPI or frame size
-        fig.set_size_inches(8, 6)
-        plt.rcParams["savefig.dpi"] = 100
+        ani = FuncAnimation(fig, update, frames=n_frames, blit=False)
 
         # Save animation as a video without audio
-        video_output_file = "live_plot.mp4"
+        video_output_file = "live_plot_snippet.mp4"
         writer = FFMpegWriter(fps=FPS, metadata={"artist": "Matplotlib"}, codec='libx264', bitrate=1800)
         ani.save(video_output_file, writer=writer)
         print(f"Video saved as {video_output_file}")
 
         # Merge video and audio using ffmpeg
-        audio_output_file = "audio.wav"  # Replace with your actual audio file
-        final_output_file = "live_plot_with_audio.mp4"
+        final_output_file = "live_plot_snippet_with_audio.mp4"
         ffmpeg_command = [
             'ffmpeg', '-i', video_output_file, '-i', audio_output_file, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', final_output_file
         ]
@@ -111,5 +122,10 @@ def main(file_index=0):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
+    finally:
+        progress_bar.close()
+
+
 if __name__ == '__main__':
-    main()
+    # Example: Generate snippet between 10 seconds and 20 seconds
+    main(file_index=0, start_time=10, end_time=20)
