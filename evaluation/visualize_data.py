@@ -13,7 +13,10 @@ FPS = 30  # Frames per second
 WINDOW_SIZE = int(SAMPLE_RATE * (FRAME_SIZE_MS / 1000.0))
 
 
-def main(file_index=0, start_time=0, end_time=None):
+def main(file_index=0, start_time=0, end_time=None, plot_window_size=10):
+    """
+    :param plot_window_size: Size of the plot window in seconds (how much of the plot to display at once).
+    """
     # Load data from STRONGFileManager
     strong_dataset = STRONGFileManager('strong')
     sample_rate = SAMPLE_RATE
@@ -86,13 +89,21 @@ def main(file_index=0, start_time=0, end_time=None):
         time_audio = np.arange(current_start, current_end) / sample_rate + start_time
         time_labels = frame_times[current_start // WINDOW_SIZE:current_end // WINDOW_SIZE]
 
-        video_line.set_data(time_audio, video_segment)
-        mic_line.set_data(time_audio, mic_segment)
-        label_line.set_data(time_labels, label_segment)
+        video_line.set_data(np.arange(len(video_data)) / sample_rate + start_time, video_data)
+        mic_line.set_data(np.arange(len(mic_data)) / sample_rate + start_time, mic_data)
+        label_line.set_data(frame_times, labels)
 
-        axs[0].set_xlim(time_audio[0], time_audio[-1])
-        axs[1].set_xlim(time_audio[0], time_audio[-1])
-        axs[2].set_xlim(time_audio[0], time_audio[-1])
+        # Center the plot window around the current time, displaying past and future data
+        current_time = time_audio[-1]  # Time of the current frame's last point
+        half_window = plot_window_size / 2  # Half of the window size
+
+        # Set x-axis limits to center the plot window around the current time
+        x_min = max(current_time - half_window, start_time)  # Avoid going before the start
+        x_max = min(current_time + half_window, end_time)  # Avoid going beyond the end
+
+        axs[0].set_xlim(x_min, x_max)
+        axs[1].set_xlim(x_min, x_max)
+        axs[2].set_xlim(x_min, x_max)
 
         # Update the progress bar
         progress_bar.update(1)
@@ -127,5 +138,5 @@ def main(file_index=0, start_time=0, end_time=None):
 
 
 if __name__ == '__main__':
-    # Example: Generate snippet between 10 seconds and 20 seconds
-    main(file_index=0, start_time=10, end_time=20)
+    # Example: Generate snippet between 10 seconds and 20 seconds with a plot window size of 10 seconds (5s past and 5s future)
+    main(file_index=0, start_time=10, end_time=20, plot_window_size=10)
