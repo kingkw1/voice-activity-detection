@@ -5,7 +5,7 @@ from scipy.io.wavfile import write
 import subprocess
 from tqdm import tqdm
 
-from core.common import SAMPLE_RATE
+from core.common import SAMPLE_RATE, DATA_FOLDER
 from core.prepare_strong_files import STRONGFileManager, FRAME_SIZE_MS
 
 # Parameters
@@ -115,18 +115,26 @@ def main(file_index=0, start_time=0, end_time=None, plot_window_size=10):
         ani = FuncAnimation(fig, update, frames=n_frames, blit=False)
 
         # Save animation as a video without audio
-        video_output_file = "live_plot_snippet.mp4"
+        video_output_file = f"{DATA_FOLDER}/live_plot_snippet.mp4"
         writer = FFMpegWriter(fps=FPS, metadata={"artist": "Matplotlib"}, codec='libx264', bitrate=1800)
         ani.save(video_output_file, writer=writer)
         print(f"Video saved as {video_output_file}")
 
         # Merge video and audio using ffmpeg
-        final_output_file = "live_plot_snippet_with_audio.mp4"
+        final_output_file = f"{DATA_FOLDER}/live_plot_snippet_with_audio.mp4"
         ffmpeg_command = [
             'ffmpeg', '-i', video_output_file, '-i', audio_output_file, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', final_output_file
         ]
         subprocess.run(ffmpeg_command, check=True)
         print(f"Final video with audio saved as {final_output_file}")
+
+        # Delete the old video without audio
+        subprocess.run(['rm', video_output_file], check=True)
+        print(f"Deleted the old video without audio: {video_output_file}")
+
+        # Delete the audio file
+        subprocess.run(['rm', audio_output_file], check=True)
+        print(f"Deleted the audio file: {audio_output_file}")
 
     except subprocess.CalledProcessError as e:
         print(f"Error occurred while merging video and audio: {e}")
@@ -139,4 +147,4 @@ def main(file_index=0, start_time=0, end_time=None, plot_window_size=10):
 
 if __name__ == '__main__':
     # Example: Generate snippet between 10 seconds and 20 seconds with a plot window size of 10 seconds (5s past and 5s future)
-    main(file_index=0, start_time=10, end_time=20, plot_window_size=10)
+    main(file_index=0, start_time=10, end_time=40, plot_window_size=10)
