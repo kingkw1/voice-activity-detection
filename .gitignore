@@ -3,5 +3,6 @@
 .venv/
 *.xml
 *.iml
+*.mp4
 
 /core/__pycache__/*
