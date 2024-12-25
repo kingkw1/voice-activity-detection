@@ -10,3 +10,4 @@ python_speech_features
 scikit-learn
 numpy
 PyQt5
+tqdm

@@ -101,9 +101,13 @@ def main(file_index=0, start_time=0, end_time=None, plot_window_size=10):
         x_min = max(current_time - half_window, start_time)  # Avoid going before the start
         x_max = min(current_time + half_window, end_time)  # Avoid going beyond the end
 
+        # Update x-axis limits
         axs[0].set_xlim(x_min, x_max)
         axs[1].set_xlim(x_min, x_max)
         axs[2].set_xlim(x_min, x_max)
+
+        # Update the y-axis limits
+        
 
         # Update the progress bar
         progress_bar.update(1)
